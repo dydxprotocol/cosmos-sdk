@@ -317,6 +317,10 @@ func (app *BaseApp) Commit() (res abci.ResponseCommit) {
 	// empty/reset the deliver state
 	app.deliverState = nil
 
+	if app.commitBlocker != nil {
+		app.commitBlocker(app.checkState.ctx)
+	}
+
 	var halt bool
 
 	switch {

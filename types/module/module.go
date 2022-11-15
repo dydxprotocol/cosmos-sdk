@@ -184,6 +184,13 @@ type AppModule interface {
 	EndBlock(sdk.Context, abci.RequestEndBlock) []abci.ValidatorUpdate
 }
 
+type CommitBlockerAppModule interface {
+	AppModule
+
+	// ABCI
+	Commit(sdk.Context)
+}
+
 // GenesisOnlyAppModule is an AppModule that only has import/export functionality
 type GenesisOnlyAppModule struct {
 	AppModuleGenesis
@@ -225,12 +232,13 @@ func (GenesisOnlyAppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []ab
 // Manager defines a module manager that provides the high level utility for managing and executing
 // operations for a group of modules
 type Manager struct {
-	Modules            map[string]AppModule
-	OrderInitGenesis   []string
-	OrderExportGenesis []string
-	OrderBeginBlockers []string
-	OrderEndBlockers   []string
-	OrderMigrations    []string
+	Modules             map[string]AppModule
+	OrderInitGenesis    []string
+	OrderExportGenesis  []string
+	OrderBeginBlockers  []string
+	OrderEndBlockers    []string
+	OrderCommitBlockers []string
+	OrderMigrations     []string
 }
 
 // NewManager creates a new Manager object
@@ -274,6 +282,11 @@ func (m *Manager) SetOrderBeginBlockers(moduleNames ...string) {
 func (m *Manager) SetOrderEndBlockers(moduleNames ...string) {
 	m.assertNoForgottenModules("SetOrderEndBlockers", moduleNames)
 	m.OrderEndBlockers = moduleNames
+}
+
+// SetOrderCommitBlockers sets the order of set commit calls
+func (m *Manager) SetOrderCommitBlockers(moduleNames ...string) {
+	m.OrderCommitBlockers = moduleNames
 }
 
 // SetOrderMigrations sets the order of migrations to be run. If not set
@@ -481,6 +494,20 @@ func (m *Manager) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) abci.R
 
 	return abci.ResponseBeginBlock{
 		Events: ctx.EventManager().ABCIEvents(),
+	}
+}
+
+// Commit performs commit functionality for all modules.
+func (m *Manager) Commit(ctx sdk.Context) {
+	for _, moduleName := range m.OrderCommitBlockers {
+		module, ok := m.Modules[moduleName].(CommitBlockerAppModule)
+		if !ok {
+			panic(
+				fmt.Sprintf("module %v does not implement a Commit method", moduleName),
+			)
+		}
+
+		module.Commit(ctx)
 	}
 }
 

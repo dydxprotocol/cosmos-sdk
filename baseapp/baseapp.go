@@ -59,13 +59,14 @@ type BaseApp struct { // nolint: maligned
 	interfaceRegistry types.InterfaceRegistry
 	txDecoder         sdk.TxDecoder // unmarshal []byte into sdk.Tx
 
-	anteHandler    sdk.AnteHandler  // ante handler for fee and auth
-	initChainer    sdk.InitChainer  // initialize state with validators and state blob
-	beginBlocker   sdk.BeginBlocker // logic to run before any txs
-	endBlocker     sdk.EndBlocker   // logic to run after all txs, and to determine valset changes
-	addrPeerFilter sdk.PeerFilter   // filter peers by address and port
-	idPeerFilter   sdk.PeerFilter   // filter peers by node ID
-	fauxMerkleMode bool             // if true, IAVL MountStores uses MountStoresDB for simulation speed.
+	anteHandler    sdk.AnteHandler   // ante handler for fee and auth
+	initChainer    sdk.InitChainer   // initialize state with validators and state blob
+	beginBlocker   sdk.BeginBlocker  // logic to run before any txs
+	commitBlocker  sdk.CommitBlocker // logic to run during commit
+	endBlocker     sdk.EndBlocker    // logic to run after all txs, and to determine valset changes
+	addrPeerFilter sdk.PeerFilter    // filter peers by address and port
+	idPeerFilter   sdk.PeerFilter    // filter peers by node ID
+	fauxMerkleMode bool              // if true, IAVL MountStores uses MountStoresDB for simulation speed.
 
 	// manages snapshots, i.e. dumps of app state at certain intervals
 	snapshotManager    *snapshots.Manager
