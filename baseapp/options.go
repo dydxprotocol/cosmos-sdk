@@ -145,6 +145,14 @@ func (app *BaseApp) SetBeginBlocker(beginBlocker sdk.BeginBlocker) {
 	app.beginBlocker = beginBlocker
 }
 
+func (app *BaseApp) SetCommitBlocker(commitBlocker sdk.CommitBlocker) {
+	if app.sealed {
+		panic("SetCommitBlocker() on sealed BaseApp")
+	}
+
+	app.commitBlocker = commitBlocker
+}
+
 func (app *BaseApp) SetEndBlocker(endBlocker sdk.EndBlocker) {
 	if app.sealed {
 		panic("SetEndBlocker() on sealed BaseApp")

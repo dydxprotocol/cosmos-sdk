@@ -9,6 +9,7 @@ import (
 // Common metric key constants
 const (
 	MetricKeyBeginBlocker = "begin_blocker"
+	MetricKeyCommit       = "commit"
 	MetricKeyEndBlocker   = "end_blocker"
 	MetricLabelNameModule = "module"
 )
