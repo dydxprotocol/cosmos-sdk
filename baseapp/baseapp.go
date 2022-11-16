@@ -135,6 +135,7 @@ type abciData struct {
 	initChainer  sdk.InitChainer  // initialize state with validators and state blob
 	beginBlocker sdk.BeginBlocker // logic to run before any txs
 	endBlocker   sdk.EndBlocker   // logic to run after all txs, and to determine valset changes
+	commiter     sdk.Commiter     // logic to run during commit
 
 	// absent validators from begin block
 	voteInfos []abci.VoteInfo
