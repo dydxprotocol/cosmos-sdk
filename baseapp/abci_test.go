@@ -598,6 +598,33 @@ func TestABCI_EndBlock(t *testing.T) {
 	require.Equal(t, cp.Block.MaxGas, res.ConsensusParamUpdates.Block.MaxGas)
 }
 
+func TestBaseApp_Commit(t *testing.T) {
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := log.NewTestLogger(t)
+
+	cp := &cmtproto.ConsensusParams{
+		Block: &cmtproto.BlockParams{
+			MaxGas: 5000000,
+		},
+	}
+
+	app := baseapp.NewBaseApp(name, logger, db, nil)
+	app.SetParamStore(&paramStore{db: dbm.NewMemDB()})
+	app.InitChain(abci.RequestInitChain{
+		ConsensusParams: cp,
+	})
+
+	wasCommiterCalled := false
+	app.SetCommiter(func(ctx sdk.Context) {
+		wasCommiterCalled = true
+	})
+	app.Seal()
+
+	app.Commit()
+	require.Equal(t, true, wasCommiterCalled)
+}
+
 func TestABCI_CheckTx(t *testing.T) {
 	// This ante handler reads the key and checks that the value matches the
 	// current counter. This ensures changes to the KVStore persist across
@@ -1320,6 +1347,28 @@ func TestABCI_GetBlockRetentionHeight(t *testing.T) {
 			require.Equal(t, tc.expected, tc.bapp.GetBlockRetentionHeight(tc.commitHeight))
 		})
 	}
+}
+
+// Verifies that the Commiter is called with the checkState.
+func TestCommiterCalledWithCheckState(t *testing.T) {
+	t.Parallel()
+
+	logger := log.NewTestLogger(t)
+	db := dbm.NewMemDB()
+	name := t.Name()
+	app := baseapp.NewBaseApp(name, logger, db, nil)
+
+	wasCommiterCalled := false
+	app.SetCommiter(func(ctx sdk.Context) {
+		// Make sure context is for next block
+		require.Equal(t, true, ctx.IsCheckTx())
+		wasCommiterCalled = true
+	})
+
+	app.BeginBlock(abci.RequestBeginBlock{Header: cmtproto.Header{Height: 1}})
+	app.Commit()
+
+	require.Equal(t, true, wasCommiterCalled)
 }
 
 func TestABCI_Proposal_HappyPath(t *testing.T) {
