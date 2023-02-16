@@ -28,7 +28,7 @@ message TransactionEvents {
 // that they appear within.
 message IndexerTendermintBlock {
   uint32                     height    = 1;
-  google.protobuf.Timestamp  time      = 2;
+  google.protobuf.Timestamp  time      = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
   repeated TransactionEvents tx_events = 3;
   repeated string            tx_hashes = 4;
 }

@@ -1,16 +1,24 @@
 package types
 
 import (
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )
 
-type KafkaBlockEventManager struct {
+type IndexerBlockEventManager struct {
 	block *IndexerTendermintBlock
 }
 
-func NewKafkaBlockEventManager() *KafkaBlockEventManager {
-	return &KafkaBlockEventManager{&IndexerTendermintBlock{}}
+func NewIndexerTendermintEvent(subType string, data string) IndexerTendermintEvent {
+	return IndexerTendermintEvent{
+		Subtype: subType,
+		Data:    data,
+	}
+}
+
+// NewIndexerBlockEventManager returns a new IndexerBlockEventManager.
+// This should be called in BeginBlocker.
+func NewIndexerBlockEventManager() *IndexerBlockEventManager {
+	return &IndexerBlockEventManager{&IndexerTendermintBlock{}}
 }
 
 func contains[T comparable](s []T, e T) int {
@@ -22,9 +30,9 @@ func contains[T comparable](s []T, e T) int {
 	return -1
 }
 
-// AddTransactionHash adds a transaction hash to the block event manager if this is a new transaction
+// addTransactionHash adds a transaction hash to the block event manager if this is a new transaction
 // hash. Returns the index of the new/existing transaction hash in the block event manager.
-func (eventManager *KafkaBlockEventManager) AddTransactionHash(txHash string) int {
+func (eventManager *IndexerBlockEventManager) addTransactionHash(txHash string) int {
 	if eventManager.block.TxHashes == nil {
 		eventManager.block.TxHashes = []string{}
 	}
@@ -36,22 +44,28 @@ func (eventManager *KafkaBlockEventManager) AddTransactionHash(txHash string) in
 	return len(eventManager.block.TxEvents) - 1
 }
 
-func (eventManager *KafkaBlockEventManager) AddEvent(txHash string, event IndexerTendermintEvent) {
-	index := eventManager.AddTransactionHash(txHash)
+// AddEvent adds an event to the block event manager. If the transaction hash is not already in the
+// block event manager, it is also added.
+func (eventManager *IndexerBlockEventManager) AddEvent(txHash string, event IndexerTendermintEvent) {
+	index := eventManager.addTransactionHash(txHash)
 	if eventManager.block.TxEvents[index].Events == nil {
 		eventManager.block.TxEvents[index].Events = make([]*IndexerTendermintEvent, 0)
 	}
 	eventManager.block.TxEvents[index].Events = append(eventManager.block.TxEvents[index].Events, &event)
 }
 
-func (eventManager *KafkaBlockEventManager) SetBlockHeight(blockHeight int64) {
+// SetBlockHeight sets the block height of the block event manager.
+func (eventManager *IndexerBlockEventManager) SetBlockHeight(blockHeight int64) {
 	eventManager.block.Height = uint32(blockHeight)
 }
 
-func (eventManager *KafkaBlockEventManager) SetBlockTime(blockTime time.Time) {
-	eventManager.block.Time = timestamppb.New(blockTime)
+// SetBlockTime sets the block time of the block event manager.
+func (eventManager *IndexerBlockEventManager) SetBlockTime(blockTime time.Time) {
+	eventManager.block.Time = blockTime
 }
 
-func (eventManager *KafkaBlockEventManager) GetBlock() *IndexerTendermintBlock {
+// GetBlock returns the block. It should only be called in EndBlocker. Otherwise, the block is
+// incomplete.
+func (eventManager *IndexerBlockEventManager) GetBlock() *IndexerTendermintBlock {
 	return eventManager.block
 }
