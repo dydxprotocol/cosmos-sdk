@@ -1,9 +1,11 @@
 syntax = "proto3";
 package dydxprotocol.indexer.payload;
 
-import "google/protobuf/timestamp.proto";
+option go_package = "github.com/cosmos/cosmos-sdk/types";
 
-option go_package = "github.com/cosmos/cosmos-sdk/x/types";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
 
 // IndexerTendermintEvent contains the base64 encoded event proto emitted from the V4 application
 // as well as additional metadata to determine the ordering of the event within the block and the
