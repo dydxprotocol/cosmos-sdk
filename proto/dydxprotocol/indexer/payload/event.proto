@@ -1,5 +1,5 @@
 syntax = "proto3";
-package cosmos.dydxprotocol.indexer.payload;
+package dydxprotocol.indexer.payload;
 
 import "google/protobuf/timestamp.proto";
 
@@ -9,13 +9,14 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/types";
 // as well as additional metadata to determine the ordering of the event within the block and the
 // subtype of the event.
 message IndexerTendermintEvent {
-string subtype = 1;
-// Base64 encoded proto from the Tendermint event.
-string data = 2;
+  string subtype = 1;
+  // Base64 encoded proto from the Tendermint event.
+  string data = 2;
 }
 
+// TransactionEvents represents a set of events in a single transaction. Order matters.
 message TransactionEvents {
-repeated IndexerTendermintEvent events = 1;
+  repeated IndexerTendermintEvent events = 1;
 }
 
 // IndexerTendermintBlock contains all the events for the block along with metadata for the block
@@ -24,8 +25,8 @@ repeated IndexerTendermintEvent events = 1;
 // the block. The transaction events contain the events and follow the ordering of the transactions
 // that they appear within.
 message IndexerTendermintBlock {
-uint32                     height    = 1;
-google.protobuf.Timestamp  time      = 2;
-repeated TransactionEvents tx_events = 3;
-repeated string            tx_hashes = 4;
+  uint32                     height    = 1;
+  google.protobuf.Timestamp  time      = 2;
+  repeated TransactionEvents tx_events = 3;
+  repeated string            tx_hashes = 4;
 }
