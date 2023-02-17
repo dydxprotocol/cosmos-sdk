@@ -6,7 +6,6 @@ option go_package = "github.com/cosmos/cosmos-sdk/types";
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 
-
 // IndexerTendermintEvent contains the base64 encoded event proto emitted from the V4 application
 // as well as additional metadata to determine the ordering of the event within the block and the
 // subtype of the event.
@@ -14,21 +13,31 @@ message IndexerTendermintEvent {
   string subtype = 1;
   // Base64 encoded proto from the Tendermint event.
   string data = 2;
-}
-
-// TransactionEvents represents a set of events in a single transaction. Order matters.
-message TransactionEvents {
-  repeated IndexerTendermintEvent events = 1;
+  // enum to specify that the IndexerTendermintEvent is a block event.
+  enum BlockEvent {
+    // BLOCK_EVENT indicates that the event was generated during processing of the block rather
+    // than any specific transaction e.g. during FinalizeBlock.
+    BLOCK_EVENT = 0;
+  }
+  // ordering_within_block is either the transaction index or a boolean indicating the event was
+  // generated during processing the block rather than any specific transaction e.g. during
+  // FinalizeBlock.
+  oneof ordering_within_block {
+    uint32     transaction_index = 3;
+    BlockEvent is_block_event    = 4;
+  }
+  // Index of the event within the list of events that happened either during a transaction or
+  // during processing of a block.
+  uint32 event_index = 5;
 }
 
 // IndexerTendermintBlock contains all the events for the block along with metadata for the block
 // height, timestamp of the block and a list of all the hashes of the transactions within the
 // block. The transaction hashes follow the ordering of the transactions as they appear within
-// the block. The transaction events contain the events and follow the ordering of the transactions
-// that they appear within.
+// the block.
 message IndexerTendermintBlock {
-  uint32                     height    = 1;
-  google.protobuf.Timestamp  time      = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
-  repeated TransactionEvents tx_events = 3;
-  repeated string            tx_hashes = 4;
+  uint32                          height    = 1;
+  google.protobuf.Timestamp       time      = 2 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+  repeated IndexerTendermintEvent events    = 3;
+  repeated string                 tx_hashes = 4;
 }

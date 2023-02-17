@@ -15,9 +15,12 @@ import (
 )
 
 var (
-	md_IndexerTendermintEvent         protoreflect.MessageDescriptor
-	fd_IndexerTendermintEvent_subtype protoreflect.FieldDescriptor
-	fd_IndexerTendermintEvent_data    protoreflect.FieldDescriptor
+	md_IndexerTendermintEvent                   protoreflect.MessageDescriptor
+	fd_IndexerTendermintEvent_subtype           protoreflect.FieldDescriptor
+	fd_IndexerTendermintEvent_data              protoreflect.FieldDescriptor
+	fd_IndexerTendermintEvent_transaction_index protoreflect.FieldDescriptor
+	fd_IndexerTendermintEvent_is_block_event    protoreflect.FieldDescriptor
+	fd_IndexerTendermintEvent_event_index       protoreflect.FieldDescriptor
 )
 
 func init() {
@@ -25,6 +28,9 @@ func init() {
 	md_IndexerTendermintEvent = File_dydxprotocol_indexer_payload_event_proto.Messages().ByName("IndexerTendermintEvent")
 	fd_IndexerTendermintEvent_subtype = md_IndexerTendermintEvent.Fields().ByName("subtype")
 	fd_IndexerTendermintEvent_data = md_IndexerTendermintEvent.Fields().ByName("data")
+	fd_IndexerTendermintEvent_transaction_index = md_IndexerTendermintEvent.Fields().ByName("transaction_index")
+	fd_IndexerTendermintEvent_is_block_event = md_IndexerTendermintEvent.Fields().ByName("is_block_event")
+	fd_IndexerTendermintEvent_event_index = md_IndexerTendermintEvent.Fields().ByName("event_index")
 }
 
 var _ protoreflect.Message = (*fastReflection_IndexerTendermintEvent)(nil)
@@ -104,6 +110,28 @@ func (x *fastReflection_IndexerTendermintEvent) Range(f func(protoreflect.FieldD
 			return
 		}
 	}
+	if x.OrderingWithinBlock != nil {
+		switch o := x.OrderingWithinBlock.(type) {
+		case *IndexerTendermintEvent_TransactionIndex:
+			v := o.TransactionIndex
+			value := protoreflect.ValueOfUint32(v)
+			if !f(fd_IndexerTendermintEvent_transaction_index, value) {
+				return
+			}
+		case *IndexerTendermintEvent_IsBlockEvent:
+			v := o.IsBlockEvent
+			value := protoreflect.ValueOfEnum((protoreflect.EnumNumber)(v))
+			if !f(fd_IndexerTendermintEvent_is_block_event, value) {
+				return
+			}
+		}
+	}
+	if x.EventIndex != uint32(0) {
+		value := protoreflect.ValueOfUint32(x.EventIndex)
+		if !f(fd_IndexerTendermintEvent_event_index, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -123,6 +151,24 @@ func (x *fastReflection_IndexerTendermintEvent) Has(fd protoreflect.FieldDescrip
 		return x.Subtype != ""
 	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.data":
 		return x.Data != ""
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.transaction_index":
+		if x.OrderingWithinBlock == nil {
+			return false
+		} else if _, ok := x.OrderingWithinBlock.(*IndexerTendermintEvent_TransactionIndex); ok {
+			return true
+		} else {
+			return false
+		}
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.is_block_event":
+		if x.OrderingWithinBlock == nil {
+			return false
+		} else if _, ok := x.OrderingWithinBlock.(*IndexerTendermintEvent_IsBlockEvent); ok {
+			return true
+		} else {
+			return false
+		}
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.event_index":
+		return x.EventIndex != uint32(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.IndexerTendermintEvent"))
@@ -143,6 +189,12 @@ func (x *fastReflection_IndexerTendermintEvent) Clear(fd protoreflect.FieldDescr
 		x.Subtype = ""
 	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.data":
 		x.Data = ""
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.transaction_index":
+		x.OrderingWithinBlock = nil
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.is_block_event":
+		x.OrderingWithinBlock = nil
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.event_index":
+		x.EventIndex = uint32(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.IndexerTendermintEvent"))
@@ -165,6 +217,25 @@ func (x *fastReflection_IndexerTendermintEvent) Get(descriptor protoreflect.Fiel
 	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.data":
 		value := x.Data
 		return protoreflect.ValueOfString(value)
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.transaction_index":
+		if x.OrderingWithinBlock == nil {
+			return protoreflect.ValueOfUint32(uint32(0))
+		} else if v, ok := x.OrderingWithinBlock.(*IndexerTendermintEvent_TransactionIndex); ok {
+			return protoreflect.ValueOfUint32(v.TransactionIndex)
+		} else {
+			return protoreflect.ValueOfUint32(uint32(0))
+		}
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.is_block_event":
+		if x.OrderingWithinBlock == nil {
+			return protoreflect.ValueOfEnum(0)
+		} else if v, ok := x.OrderingWithinBlock.(*IndexerTendermintEvent_IsBlockEvent); ok {
+			return protoreflect.ValueOfEnum((protoreflect.EnumNumber)(v.IsBlockEvent))
+		} else {
+			return protoreflect.ValueOfEnum(0)
+		}
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.event_index":
+		value := x.EventIndex
+		return protoreflect.ValueOfUint32(value)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.IndexerTendermintEvent"))
@@ -189,6 +260,14 @@ func (x *fastReflection_IndexerTendermintEvent) Set(fd protoreflect.FieldDescrip
 		x.Subtype = value.Interface().(string)
 	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.data":
 		x.Data = value.Interface().(string)
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.transaction_index":
+		cv := uint32(value.Uint())
+		x.OrderingWithinBlock = &IndexerTendermintEvent_TransactionIndex{TransactionIndex: cv}
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.is_block_event":
+		cv := (IndexerTendermintEvent_BlockEvent)(value.Enum())
+		x.OrderingWithinBlock = &IndexerTendermintEvent_IsBlockEvent{IsBlockEvent: cv}
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.event_index":
+		x.EventIndex = uint32(value.Uint())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.IndexerTendermintEvent"))
@@ -213,6 +292,12 @@ func (x *fastReflection_IndexerTendermintEvent) Mutable(fd protoreflect.FieldDes
 		panic(fmt.Errorf("field subtype of message dydxprotocol.indexer.payload.IndexerTendermintEvent is not mutable"))
 	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.data":
 		panic(fmt.Errorf("field data of message dydxprotocol.indexer.payload.IndexerTendermintEvent is not mutable"))
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.transaction_index":
+		panic(fmt.Errorf("field transaction_index of message dydxprotocol.indexer.payload.IndexerTendermintEvent is not mutable"))
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.is_block_event":
+		panic(fmt.Errorf("field is_block_event of message dydxprotocol.indexer.payload.IndexerTendermintEvent is not mutable"))
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.event_index":
+		panic(fmt.Errorf("field event_index of message dydxprotocol.indexer.payload.IndexerTendermintEvent is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.IndexerTendermintEvent"))
@@ -230,6 +315,12 @@ func (x *fastReflection_IndexerTendermintEvent) NewField(fd protoreflect.FieldDe
 		return protoreflect.ValueOfString("")
 	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.data":
 		return protoreflect.ValueOfString("")
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.transaction_index":
+		return protoreflect.ValueOfUint32(uint32(0))
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.is_block_event":
+		return protoreflect.ValueOfEnum(0)
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.event_index":
+		return protoreflect.ValueOfUint32(uint32(0))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.IndexerTendermintEvent"))
@@ -243,6 +334,16 @@ func (x *fastReflection_IndexerTendermintEvent) NewField(fd protoreflect.FieldDe
 // It panics if the oneof descriptor does not belong to this message.
 func (x *fastReflection_IndexerTendermintEvent) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
+	case "dydxprotocol.indexer.payload.IndexerTendermintEvent.ordering_within_block":
+		if x.OrderingWithinBlock == nil {
+			return nil
+		}
+		switch x.OrderingWithinBlock.(type) {
+		case *IndexerTendermintEvent_TransactionIndex:
+			return x.Descriptor().Fields().ByName("transaction_index")
+		case *IndexerTendermintEvent_IsBlockEvent:
+			return x.Descriptor().Fields().ByName("is_block_event")
+		}
 	default:
 		panic(fmt.Errorf("%s is not a oneof field in dydxprotocol.indexer.payload.IndexerTendermintEvent", d.FullName()))
 	}
@@ -307,6 +408,21 @@ func (x *fastReflection_IndexerTendermintEvent) ProtoMethods() *protoiface.Metho
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
+		switch x := x.OrderingWithinBlock.(type) {
+		case *IndexerTendermintEvent_TransactionIndex:
+			if x == nil {
+				break
+			}
+			n += 1 + runtime.Sov(uint64(x.TransactionIndex))
+		case *IndexerTendermintEvent_IsBlockEvent:
+			if x == nil {
+				break
+			}
+			n += 1 + runtime.Sov(uint64(x.IsBlockEvent))
+		}
+		if x.EventIndex != 0 {
+			n += 1 + runtime.Sov(uint64(x.EventIndex))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -335,6 +451,21 @@ func (x *fastReflection_IndexerTendermintEvent) ProtoMethods() *protoiface.Metho
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		switch x := x.OrderingWithinBlock.(type) {
+		case *IndexerTendermintEvent_TransactionIndex:
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.TransactionIndex))
+			i--
+			dAtA[i] = 0x18
+		case *IndexerTendermintEvent_IsBlockEvent:
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.IsBlockEvent))
+			i--
+			dAtA[i] = 0x20
+		}
+		if x.EventIndex != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.EventIndex))
+			i--
+			dAtA[i] = 0x28
 		}
 		if len(x.Data) > 0 {
 			i -= len(x.Data)
@@ -463,471 +594,11 @@ func (x *fastReflection_IndexerTendermintEvent) ProtoMethods() *protoiface.Metho
 				}
 				x.Data = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
-			default:
-				iNdEx = preIndex
-				skippy, err := runtime.Skip(dAtA[iNdEx:])
-				if err != nil {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+			case 3:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field TransactionIndex", wireType)
 				}
-				if (skippy < 0) || (iNdEx+skippy) < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if (iNdEx + skippy) > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				if !options.DiscardUnknown {
-					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
-				}
-				iNdEx += skippy
-			}
-		}
-
-		if iNdEx > l {
-			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-		}
-		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
-	}
-	return &protoiface.Methods{
-		NoUnkeyedLiterals: struct{}{},
-		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
-		Size:              size,
-		Marshal:           marshal,
-		Unmarshal:         unmarshal,
-		Merge:             nil,
-		CheckInitialized:  nil,
-	}
-}
-
-var _ protoreflect.List = (*_TransactionEvents_1_list)(nil)
-
-type _TransactionEvents_1_list struct {
-	list *[]*IndexerTendermintEvent
-}
-
-func (x *_TransactionEvents_1_list) Len() int {
-	if x.list == nil {
-		return 0
-	}
-	return len(*x.list)
-}
-
-func (x *_TransactionEvents_1_list) Get(i int) protoreflect.Value {
-	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
-}
-
-func (x *_TransactionEvents_1_list) Set(i int, value protoreflect.Value) {
-	valueUnwrapped := value.Message()
-	concreteValue := valueUnwrapped.Interface().(*IndexerTendermintEvent)
-	(*x.list)[i] = concreteValue
-}
-
-func (x *_TransactionEvents_1_list) Append(value protoreflect.Value) {
-	valueUnwrapped := value.Message()
-	concreteValue := valueUnwrapped.Interface().(*IndexerTendermintEvent)
-	*x.list = append(*x.list, concreteValue)
-}
-
-func (x *_TransactionEvents_1_list) AppendMutable() protoreflect.Value {
-	v := new(IndexerTendermintEvent)
-	*x.list = append(*x.list, v)
-	return protoreflect.ValueOfMessage(v.ProtoReflect())
-}
-
-func (x *_TransactionEvents_1_list) Truncate(n int) {
-	for i := n; i < len(*x.list); i++ {
-		(*x.list)[i] = nil
-	}
-	*x.list = (*x.list)[:n]
-}
-
-func (x *_TransactionEvents_1_list) NewElement() protoreflect.Value {
-	v := new(IndexerTendermintEvent)
-	return protoreflect.ValueOfMessage(v.ProtoReflect())
-}
-
-func (x *_TransactionEvents_1_list) IsValid() bool {
-	return x.list != nil
-}
-
-var (
-	md_TransactionEvents        protoreflect.MessageDescriptor
-	fd_TransactionEvents_events protoreflect.FieldDescriptor
-)
-
-func init() {
-	file_dydxprotocol_indexer_payload_event_proto_init()
-	md_TransactionEvents = File_dydxprotocol_indexer_payload_event_proto.Messages().ByName("TransactionEvents")
-	fd_TransactionEvents_events = md_TransactionEvents.Fields().ByName("events")
-}
-
-var _ protoreflect.Message = (*fastReflection_TransactionEvents)(nil)
-
-type fastReflection_TransactionEvents TransactionEvents
-
-func (x *TransactionEvents) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_TransactionEvents)(x)
-}
-
-func (x *TransactionEvents) slowProtoReflect() protoreflect.Message {
-	mi := &file_dydxprotocol_indexer_payload_event_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-var _fastReflection_TransactionEvents_messageType fastReflection_TransactionEvents_messageType
-var _ protoreflect.MessageType = fastReflection_TransactionEvents_messageType{}
-
-type fastReflection_TransactionEvents_messageType struct{}
-
-func (x fastReflection_TransactionEvents_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_TransactionEvents)(nil)
-}
-func (x fastReflection_TransactionEvents_messageType) New() protoreflect.Message {
-	return new(fastReflection_TransactionEvents)
-}
-func (x fastReflection_TransactionEvents_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_TransactionEvents
-}
-
-// Descriptor returns message descriptor, which contains only the protobuf
-// type information for the message.
-func (x *fastReflection_TransactionEvents) Descriptor() protoreflect.MessageDescriptor {
-	return md_TransactionEvents
-}
-
-// Type returns the message type, which encapsulates both Go and protobuf
-// type information. If the Go type information is not needed,
-// it is recommended that the message descriptor be used instead.
-func (x *fastReflection_TransactionEvents) Type() protoreflect.MessageType {
-	return _fastReflection_TransactionEvents_messageType
-}
-
-// New returns a newly allocated and mutable empty message.
-func (x *fastReflection_TransactionEvents) New() protoreflect.Message {
-	return new(fastReflection_TransactionEvents)
-}
-
-// Interface unwraps the message reflection interface and
-// returns the underlying ProtoMessage interface.
-func (x *fastReflection_TransactionEvents) Interface() protoreflect.ProtoMessage {
-	return (*TransactionEvents)(x)
-}
-
-// Range iterates over every populated field in an undefined order,
-// calling f for each field descriptor and value encountered.
-// Range returns immediately if f returns false.
-// While iterating, mutating operations may only be performed
-// on the current field descriptor.
-func (x *fastReflection_TransactionEvents) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if len(x.Events) != 0 {
-		value := protoreflect.ValueOfList(&_TransactionEvents_1_list{list: &x.Events})
-		if !f(fd_TransactionEvents_events, value) {
-			return
-		}
-	}
-}
-
-// Has reports whether a field is populated.
-//
-// Some fields have the property of nullability where it is possible to
-// distinguish between the default value of a field and whether the field
-// was explicitly populated with the default value. Singular message fields,
-// member fields of a oneof, and proto2 scalar fields are nullable. Such
-// fields are populated only if explicitly set.
-//
-// In other cases (aside from the nullable cases above),
-// a proto3 scalar field is populated if it contains a non-zero value, and
-// a repeated field is populated if it is non-empty.
-func (x *fastReflection_TransactionEvents) Has(fd protoreflect.FieldDescriptor) bool {
-	switch fd.FullName() {
-	case "dydxprotocol.indexer.payload.TransactionEvents.events":
-		return len(x.Events) != 0
-	default:
-		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.TransactionEvents"))
-		}
-		panic(fmt.Errorf("message dydxprotocol.indexer.payload.TransactionEvents does not contain field %s", fd.FullName()))
-	}
-}
-
-// Clear clears the field such that a subsequent Has call reports false.
-//
-// Clearing an extension field clears both the extension type and value
-// associated with the given field number.
-//
-// Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_TransactionEvents) Clear(fd protoreflect.FieldDescriptor) {
-	switch fd.FullName() {
-	case "dydxprotocol.indexer.payload.TransactionEvents.events":
-		x.Events = nil
-	default:
-		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.TransactionEvents"))
-		}
-		panic(fmt.Errorf("message dydxprotocol.indexer.payload.TransactionEvents does not contain field %s", fd.FullName()))
-	}
-}
-
-// Get retrieves the value for a field.
-//
-// For unpopulated scalars, it returns the default value, where
-// the default value of a bytes scalar is guaranteed to be a copy.
-// For unpopulated composite types, it returns an empty, read-only view
-// of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_TransactionEvents) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
-	switch descriptor.FullName() {
-	case "dydxprotocol.indexer.payload.TransactionEvents.events":
-		if len(x.Events) == 0 {
-			return protoreflect.ValueOfList(&_TransactionEvents_1_list{})
-		}
-		listValue := &_TransactionEvents_1_list{list: &x.Events}
-		return protoreflect.ValueOfList(listValue)
-	default:
-		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.TransactionEvents"))
-		}
-		panic(fmt.Errorf("message dydxprotocol.indexer.payload.TransactionEvents does not contain field %s", descriptor.FullName()))
-	}
-}
-
-// Set stores the value for a field.
-//
-// For a field belonging to a oneof, it implicitly clears any other field
-// that may be currently set within the same oneof.
-// For extension fields, it implicitly stores the provided ExtensionType.
-// When setting a composite type, it is unspecified whether the stored value
-// aliases the source's memory in any way. If the composite value is an
-// empty, read-only value, then it panics.
-//
-// Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_TransactionEvents) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
-	switch fd.FullName() {
-	case "dydxprotocol.indexer.payload.TransactionEvents.events":
-		lv := value.List()
-		clv := lv.(*_TransactionEvents_1_list)
-		x.Events = *clv.list
-	default:
-		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.TransactionEvents"))
-		}
-		panic(fmt.Errorf("message dydxprotocol.indexer.payload.TransactionEvents does not contain field %s", fd.FullName()))
-	}
-}
-
-// Mutable returns a mutable reference to a composite type.
-//
-// If the field is unpopulated, it may allocate a composite value.
-// For a field belonging to a oneof, it implicitly clears any other field
-// that may be currently set within the same oneof.
-// For extension fields, it implicitly stores the provided ExtensionType
-// if not already stored.
-// It panics if the field does not contain a composite type.
-//
-// Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_TransactionEvents) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
-	switch fd.FullName() {
-	case "dydxprotocol.indexer.payload.TransactionEvents.events":
-		if x.Events == nil {
-			x.Events = []*IndexerTendermintEvent{}
-		}
-		value := &_TransactionEvents_1_list{list: &x.Events}
-		return protoreflect.ValueOfList(value)
-	default:
-		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.TransactionEvents"))
-		}
-		panic(fmt.Errorf("message dydxprotocol.indexer.payload.TransactionEvents does not contain field %s", fd.FullName()))
-	}
-}
-
-// NewField returns a new value that is assignable to the field
-// for the given descriptor. For scalars, this returns the default value.
-// For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_TransactionEvents) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
-	switch fd.FullName() {
-	case "dydxprotocol.indexer.payload.TransactionEvents.events":
-		list := []*IndexerTendermintEvent{}
-		return protoreflect.ValueOfList(&_TransactionEvents_1_list{list: &list})
-	default:
-		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: dydxprotocol.indexer.payload.TransactionEvents"))
-		}
-		panic(fmt.Errorf("message dydxprotocol.indexer.payload.TransactionEvents does not contain field %s", fd.FullName()))
-	}
-}
-
-// WhichOneof reports which field within the oneof is populated,
-// returning nil if none are populated.
-// It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_TransactionEvents) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
-	switch d.FullName() {
-	default:
-		panic(fmt.Errorf("%s is not a oneof field in dydxprotocol.indexer.payload.TransactionEvents", d.FullName()))
-	}
-	panic("unreachable")
-}
-
-// GetUnknown retrieves the entire list of unknown fields.
-// The caller may only mutate the contents of the RawFields
-// if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_TransactionEvents) GetUnknown() protoreflect.RawFields {
-	return x.unknownFields
-}
-
-// SetUnknown stores an entire list of unknown fields.
-// The raw fields must be syntactically valid according to the wire format.
-// An implementation may panic if this is not the case.
-// Once stored, the caller must not mutate the content of the RawFields.
-// An empty RawFields may be passed to clear the fields.
-//
-// SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_TransactionEvents) SetUnknown(fields protoreflect.RawFields) {
-	x.unknownFields = fields
-}
-
-// IsValid reports whether the message is valid.
-//
-// An invalid message is an empty, read-only value.
-//
-// An invalid message often corresponds to a nil pointer of the concrete
-// message type, but the details are implementation dependent.
-// Validity is not part of the protobuf data model, and may not
-// be preserved in marshaling or other operations.
-func (x *fastReflection_TransactionEvents) IsValid() bool {
-	return x != nil
-}
-
-// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
-// This method may return nil.
-//
-// The returned methods type is identical to
-// "google.golang.org/protobuf/runtime/protoiface".Methods.
-// Consult the protoiface package documentation for details.
-func (x *fastReflection_TransactionEvents) ProtoMethods() *protoiface.Methods {
-	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*TransactionEvents)
-		if x == nil {
-			return protoiface.SizeOutput{
-				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
-				Size:              0,
-			}
-		}
-		options := runtime.SizeInputToOptions(input)
-		_ = options
-		var n int
-		var l int
-		_ = l
-		if len(x.Events) > 0 {
-			for _, e := range x.Events {
-				l = options.Size(e)
-				n += 1 + l + runtime.Sov(uint64(l))
-			}
-		}
-		if x.unknownFields != nil {
-			n += len(x.unknownFields)
-		}
-		return protoiface.SizeOutput{
-			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
-			Size:              n,
-		}
-	}
-
-	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*TransactionEvents)
-		if x == nil {
-			return protoiface.MarshalOutput{
-				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
-				Buf:               input.Buf,
-			}, nil
-		}
-		options := runtime.MarshalInputToOptions(input)
-		_ = options
-		size := options.Size(x)
-		dAtA := make([]byte, size)
-		i := len(dAtA)
-		_ = i
-		var l int
-		_ = l
-		if x.unknownFields != nil {
-			i -= len(x.unknownFields)
-			copy(dAtA[i:], x.unknownFields)
-		}
-		if len(x.Events) > 0 {
-			for iNdEx := len(x.Events) - 1; iNdEx >= 0; iNdEx-- {
-				encoded, err := options.Marshal(x.Events[iNdEx])
-				if err != nil {
-					return protoiface.MarshalOutput{
-						NoUnkeyedLiterals: input.NoUnkeyedLiterals,
-						Buf:               input.Buf,
-					}, err
-				}
-				i -= len(encoded)
-				copy(dAtA[i:], encoded)
-				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
-				i--
-				dAtA[i] = 0xa
-			}
-		}
-		if input.Buf != nil {
-			input.Buf = append(input.Buf, dAtA...)
-		} else {
-			input.Buf = dAtA
-		}
-		return protoiface.MarshalOutput{
-			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
-			Buf:               input.Buf,
-		}, nil
-	}
-	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*TransactionEvents)
-		if x == nil {
-			return protoiface.UnmarshalOutput{
-				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
-				Flags:             input.Flags,
-			}, nil
-		}
-		options := runtime.UnmarshalInputToOptions(input)
-		_ = options
-		dAtA := input.Buf
-		l := len(dAtA)
-		iNdEx := 0
-		for iNdEx < l {
-			preIndex := iNdEx
-			var wire uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-				}
-				if iNdEx >= l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				wire |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			fieldNum := int32(wire >> 3)
-			wireType := int(wire & 0x7)
-			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: TransactionEvents: wiretype end group for non-group")
-			}
-			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: TransactionEvents: illegal tag %d (wire type %d)", fieldNum, wire)
-			}
-			switch fieldNum {
-			case 1:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Events", wireType)
-				}
-				var msglen int
+				var v uint32
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
@@ -937,26 +608,51 @@ func (x *fastReflection_TransactionEvents) ProtoMethods() *protoiface.Methods {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					msglen |= int(b&0x7F) << shift
+					v |= uint32(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
 				}
-				if msglen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				x.OrderingWithinBlock = &IndexerTendermintEvent_TransactionIndex{v}
+			case 4:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field IsBlockEvent", wireType)
 				}
-				postIndex := iNdEx + msglen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				var v IndexerTendermintEvent_BlockEvent
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= IndexerTendermintEvent_BlockEvent(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
 				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				x.OrderingWithinBlock = &IndexerTendermintEvent_IsBlockEvent{v}
+			case 5:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field EventIndex", wireType)
 				}
-				x.Events = append(x.Events, &IndexerTendermintEvent{})
-				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Events[len(x.Events)-1]); err != nil {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				x.EventIndex = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.EventIndex |= uint32(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
 				}
-				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -995,7 +691,7 @@ func (x *fastReflection_TransactionEvents) ProtoMethods() *protoiface.Methods {
 var _ protoreflect.List = (*_IndexerTendermintBlock_3_list)(nil)
 
 type _IndexerTendermintBlock_3_list struct {
-	list *[]*TransactionEvents
+	list *[]*IndexerTendermintEvent
 }
 
 func (x *_IndexerTendermintBlock_3_list) Len() int {
@@ -1011,18 +707,18 @@ func (x *_IndexerTendermintBlock_3_list) Get(i int) protoreflect.Value {
 
 func (x *_IndexerTendermintBlock_3_list) Set(i int, value protoreflect.Value) {
 	valueUnwrapped := value.Message()
-	concreteValue := valueUnwrapped.Interface().(*TransactionEvents)
+	concreteValue := valueUnwrapped.Interface().(*IndexerTendermintEvent)
 	(*x.list)[i] = concreteValue
 }
 
 func (x *_IndexerTendermintBlock_3_list) Append(value protoreflect.Value) {
 	valueUnwrapped := value.Message()
-	concreteValue := valueUnwrapped.Interface().(*TransactionEvents)
+	concreteValue := valueUnwrapped.Interface().(*IndexerTendermintEvent)
 	*x.list = append(*x.list, concreteValue)
 }
 
 func (x *_IndexerTendermintBlock_3_list) AppendMutable() protoreflect.Value {
-	v := new(TransactionEvents)
+	v := new(IndexerTendermintEvent)
 	*x.list = append(*x.list, v)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
@@ -1035,7 +731,7 @@ func (x *_IndexerTendermintBlock_3_list) Truncate(n int) {
 }
 
 func (x *_IndexerTendermintBlock_3_list) NewElement() protoreflect.Value {
-	v := new(TransactionEvents)
+	v := new(IndexerTendermintEvent)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
 
@@ -1093,7 +789,7 @@ var (
 	md_IndexerTendermintBlock           protoreflect.MessageDescriptor
 	fd_IndexerTendermintBlock_height    protoreflect.FieldDescriptor
 	fd_IndexerTendermintBlock_time      protoreflect.FieldDescriptor
-	fd_IndexerTendermintBlock_tx_events protoreflect.FieldDescriptor
+	fd_IndexerTendermintBlock_events    protoreflect.FieldDescriptor
 	fd_IndexerTendermintBlock_tx_hashes protoreflect.FieldDescriptor
 )
 
@@ -1102,7 +798,7 @@ func init() {
 	md_IndexerTendermintBlock = File_dydxprotocol_indexer_payload_event_proto.Messages().ByName("IndexerTendermintBlock")
 	fd_IndexerTendermintBlock_height = md_IndexerTendermintBlock.Fields().ByName("height")
 	fd_IndexerTendermintBlock_time = md_IndexerTendermintBlock.Fields().ByName("time")
-	fd_IndexerTendermintBlock_tx_events = md_IndexerTendermintBlock.Fields().ByName("tx_events")
+	fd_IndexerTendermintBlock_events = md_IndexerTendermintBlock.Fields().ByName("events")
 	fd_IndexerTendermintBlock_tx_hashes = md_IndexerTendermintBlock.Fields().ByName("tx_hashes")
 }
 
@@ -1115,7 +811,7 @@ func (x *IndexerTendermintBlock) ProtoReflect() protoreflect.Message {
 }
 
 func (x *IndexerTendermintBlock) slowProtoReflect() protoreflect.Message {
-	mi := &file_dydxprotocol_indexer_payload_event_proto_msgTypes[2]
+	mi := &file_dydxprotocol_indexer_payload_event_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1183,9 +879,9 @@ func (x *fastReflection_IndexerTendermintBlock) Range(f func(protoreflect.FieldD
 			return
 		}
 	}
-	if len(x.TxEvents) != 0 {
-		value := protoreflect.ValueOfList(&_IndexerTendermintBlock_3_list{list: &x.TxEvents})
-		if !f(fd_IndexerTendermintBlock_tx_events, value) {
+	if len(x.Events) != 0 {
+		value := protoreflect.ValueOfList(&_IndexerTendermintBlock_3_list{list: &x.Events})
+		if !f(fd_IndexerTendermintBlock_events, value) {
 			return
 		}
 	}
@@ -1214,8 +910,8 @@ func (x *fastReflection_IndexerTendermintBlock) Has(fd protoreflect.FieldDescrip
 		return x.Height != uint32(0)
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.time":
 		return x.Time != nil
-	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_events":
-		return len(x.TxEvents) != 0
+	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.events":
+		return len(x.Events) != 0
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_hashes":
 		return len(x.TxHashes) != 0
 	default:
@@ -1238,8 +934,8 @@ func (x *fastReflection_IndexerTendermintBlock) Clear(fd protoreflect.FieldDescr
 		x.Height = uint32(0)
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.time":
 		x.Time = nil
-	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_events":
-		x.TxEvents = nil
+	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.events":
+		x.Events = nil
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_hashes":
 		x.TxHashes = nil
 	default:
@@ -1264,11 +960,11 @@ func (x *fastReflection_IndexerTendermintBlock) Get(descriptor protoreflect.Fiel
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.time":
 		value := x.Time
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
-	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_events":
-		if len(x.TxEvents) == 0 {
+	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.events":
+		if len(x.Events) == 0 {
 			return protoreflect.ValueOfList(&_IndexerTendermintBlock_3_list{})
 		}
-		listValue := &_IndexerTendermintBlock_3_list{list: &x.TxEvents}
+		listValue := &_IndexerTendermintBlock_3_list{list: &x.Events}
 		return protoreflect.ValueOfList(listValue)
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_hashes":
 		if len(x.TxHashes) == 0 {
@@ -1300,10 +996,10 @@ func (x *fastReflection_IndexerTendermintBlock) Set(fd protoreflect.FieldDescrip
 		x.Height = uint32(value.Uint())
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.time":
 		x.Time = value.Message().Interface().(*timestamppb.Timestamp)
-	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_events":
+	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.events":
 		lv := value.List()
 		clv := lv.(*_IndexerTendermintBlock_3_list)
-		x.TxEvents = *clv.list
+		x.Events = *clv.list
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_hashes":
 		lv := value.List()
 		clv := lv.(*_IndexerTendermintBlock_4_list)
@@ -1333,11 +1029,11 @@ func (x *fastReflection_IndexerTendermintBlock) Mutable(fd protoreflect.FieldDes
 			x.Time = new(timestamppb.Timestamp)
 		}
 		return protoreflect.ValueOfMessage(x.Time.ProtoReflect())
-	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_events":
-		if x.TxEvents == nil {
-			x.TxEvents = []*TransactionEvents{}
+	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.events":
+		if x.Events == nil {
+			x.Events = []*IndexerTendermintEvent{}
 		}
-		value := &_IndexerTendermintBlock_3_list{list: &x.TxEvents}
+		value := &_IndexerTendermintBlock_3_list{list: &x.Events}
 		return protoreflect.ValueOfList(value)
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_hashes":
 		if x.TxHashes == nil {
@@ -1365,8 +1061,8 @@ func (x *fastReflection_IndexerTendermintBlock) NewField(fd protoreflect.FieldDe
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.time":
 		m := new(timestamppb.Timestamp)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
-	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_events":
-		list := []*TransactionEvents{}
+	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.events":
+		list := []*IndexerTendermintEvent{}
 		return protoreflect.ValueOfList(&_IndexerTendermintBlock_3_list{list: &list})
 	case "dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_hashes":
 		list := []string{}
@@ -1447,8 +1143,8 @@ func (x *fastReflection_IndexerTendermintBlock) ProtoMethods() *protoiface.Metho
 			l = options.Size(x.Time)
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
-		if len(x.TxEvents) > 0 {
-			for _, e := range x.TxEvents {
+		if len(x.Events) > 0 {
+			for _, e := range x.Events {
 				l = options.Size(e)
 				n += 1 + l + runtime.Sov(uint64(l))
 			}
@@ -1497,9 +1193,9 @@ func (x *fastReflection_IndexerTendermintBlock) ProtoMethods() *protoiface.Metho
 				dAtA[i] = 0x22
 			}
 		}
-		if len(x.TxEvents) > 0 {
-			for iNdEx := len(x.TxEvents) - 1; iNdEx >= 0; iNdEx-- {
-				encoded, err := options.Marshal(x.TxEvents[iNdEx])
+		if len(x.Events) > 0 {
+			for iNdEx := len(x.Events) - 1; iNdEx >= 0; iNdEx-- {
+				encoded, err := options.Marshal(x.Events[iNdEx])
 				if err != nil {
 					return protoiface.MarshalOutput{
 						NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1638,7 +1334,7 @@ func (x *fastReflection_IndexerTendermintBlock) ProtoMethods() *protoiface.Metho
 				iNdEx = postIndex
 			case 3:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field TxEvents", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Events", wireType)
 				}
 				var msglen int
 				for shift := uint(0); ; shift += 7 {
@@ -1665,8 +1361,8 @@ func (x *fastReflection_IndexerTendermintBlock) ProtoMethods() *protoiface.Metho
 				if postIndex > l {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
-				x.TxEvents = append(x.TxEvents, &TransactionEvents{})
-				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.TxEvents[len(x.TxEvents)-1]); err != nil {
+				x.Events = append(x.Events, &IndexerTendermintEvent{})
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Events[len(x.Events)-1]); err != nil {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
 				}
 				iNdEx = postIndex
@@ -1750,6 +1446,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// enum to specify that the IndexerTendermintEvent is a block event.
+type IndexerTendermintEvent_BlockEvent int32
+
+const (
+	// BLOCK_EVENT indicates that the event was generated during processing of the block rather
+	// than any specific transaction e.g. during FinalizeBlock.
+	IndexerTendermintEvent_BLOCK_EVENT IndexerTendermintEvent_BlockEvent = 0
+)
+
+// Enum value maps for IndexerTendermintEvent_BlockEvent.
+var (
+	IndexerTendermintEvent_BlockEvent_name = map[int32]string{
+		0: "BLOCK_EVENT",
+	}
+	IndexerTendermintEvent_BlockEvent_value = map[string]int32{
+		"BLOCK_EVENT": 0,
+	}
+)
+
+func (x IndexerTendermintEvent_BlockEvent) Enum() *IndexerTendermintEvent_BlockEvent {
+	p := new(IndexerTendermintEvent_BlockEvent)
+	*p = x
+	return p
+}
+
+func (x IndexerTendermintEvent_BlockEvent) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (IndexerTendermintEvent_BlockEvent) Descriptor() protoreflect.EnumDescriptor {
+	return file_dydxprotocol_indexer_payload_event_proto_enumTypes[0].Descriptor()
+}
+
+func (IndexerTendermintEvent_BlockEvent) Type() protoreflect.EnumType {
+	return &file_dydxprotocol_indexer_payload_event_proto_enumTypes[0]
+}
+
+func (x IndexerTendermintEvent_BlockEvent) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use IndexerTendermintEvent_BlockEvent.Descriptor instead.
+func (IndexerTendermintEvent_BlockEvent) EnumDescriptor() ([]byte, []int) {
+	return file_dydxprotocol_indexer_payload_event_proto_rawDescGZIP(), []int{0, 0}
+}
+
 // IndexerTendermintEvent contains the base64 encoded event proto emitted from the V4 application
 // as well as additional metadata to determine the ordering of the event within the block and the
 // subtype of the event.
@@ -1761,6 +1503,18 @@ type IndexerTendermintEvent struct {
 	Subtype string `protobuf:"bytes,1,opt,name=subtype,proto3" json:"subtype,omitempty"`
 	// Base64 encoded proto from the Tendermint event.
 	Data string `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	// ordering_within_block is either the transaction index or a boolean indicating the event was
+	// generated during processing the block rather than any specific transaction e.g. during
+	// FinalizeBlock.
+	//
+	// Types that are assignable to OrderingWithinBlock:
+	//
+	//	*IndexerTendermintEvent_TransactionIndex
+	//	*IndexerTendermintEvent_IsBlockEvent
+	OrderingWithinBlock isIndexerTendermintEvent_OrderingWithinBlock `protobuf_oneof:"ordering_within_block"`
+	// Index of the event within the list of events that happened either during a transaction or
+	// during processing of a block.
+	EventIndex uint32 `protobuf:"varint,5,opt,name=event_index,json=eventIndex,proto3" json:"event_index,omitempty"`
 }
 
 func (x *IndexerTendermintEvent) Reset() {
@@ -1797,62 +1551,69 @@ func (x *IndexerTendermintEvent) GetData() string {
 	return ""
 }
 
-// TransactionEvents represents a set of events in a single transaction. Order matters.
-type TransactionEvents struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Events []*IndexerTendermintEvent `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
-}
-
-func (x *TransactionEvents) Reset() {
-	*x = TransactionEvents{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_dydxprotocol_indexer_payload_event_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *TransactionEvents) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TransactionEvents) ProtoMessage() {}
-
-// Deprecated: Use TransactionEvents.ProtoReflect.Descriptor instead.
-func (*TransactionEvents) Descriptor() ([]byte, []int) {
-	return file_dydxprotocol_indexer_payload_event_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *TransactionEvents) GetEvents() []*IndexerTendermintEvent {
+func (x *IndexerTendermintEvent) GetOrderingWithinBlock() isIndexerTendermintEvent_OrderingWithinBlock {
 	if x != nil {
-		return x.Events
+		return x.OrderingWithinBlock
 	}
 	return nil
 }
 
+func (x *IndexerTendermintEvent) GetTransactionIndex() uint32 {
+	if x, ok := x.GetOrderingWithinBlock().(*IndexerTendermintEvent_TransactionIndex); ok {
+		return x.TransactionIndex
+	}
+	return 0
+}
+
+func (x *IndexerTendermintEvent) GetIsBlockEvent() IndexerTendermintEvent_BlockEvent {
+	if x, ok := x.GetOrderingWithinBlock().(*IndexerTendermintEvent_IsBlockEvent); ok {
+		return x.IsBlockEvent
+	}
+	return IndexerTendermintEvent_BLOCK_EVENT
+}
+
+func (x *IndexerTendermintEvent) GetEventIndex() uint32 {
+	if x != nil {
+		return x.EventIndex
+	}
+	return 0
+}
+
+type isIndexerTendermintEvent_OrderingWithinBlock interface {
+	isIndexerTendermintEvent_OrderingWithinBlock()
+}
+
+type IndexerTendermintEvent_TransactionIndex struct {
+	TransactionIndex uint32 `protobuf:"varint,3,opt,name=transaction_index,json=transactionIndex,proto3,oneof"`
+}
+
+type IndexerTendermintEvent_IsBlockEvent struct {
+	IsBlockEvent IndexerTendermintEvent_BlockEvent `protobuf:"varint,4,opt,name=is_block_event,json=isBlockEvent,proto3,enum=dydxprotocol.indexer.payload.IndexerTendermintEvent_BlockEvent,oneof"`
+}
+
+func (*IndexerTendermintEvent_TransactionIndex) isIndexerTendermintEvent_OrderingWithinBlock() {}
+
+func (*IndexerTendermintEvent_IsBlockEvent) isIndexerTendermintEvent_OrderingWithinBlock() {}
+
 // IndexerTendermintBlock contains all the events for the block along with metadata for the block
 // height, timestamp of the block and a list of all the hashes of the transactions within the
 // block. The transaction hashes follow the ordering of the transactions as they appear within
-// the block. The transaction events contain the events and follow the ordering of the transactions
-// that they appear within.
+// the block.
 type IndexerTendermintBlock struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Height   uint32                 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
-	Time     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=time,proto3" json:"time,omitempty"`
-	TxEvents []*TransactionEvents   `protobuf:"bytes,3,rep,name=tx_events,json=txEvents,proto3" json:"tx_events,omitempty"`
-	TxHashes []string               `protobuf:"bytes,4,rep,name=tx_hashes,json=txHashes,proto3" json:"tx_hashes,omitempty"`
+	Height   uint32                    `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+	Time     *timestamppb.Timestamp    `protobuf:"bytes,2,opt,name=time,proto3" json:"time,omitempty"`
+	Events   []*IndexerTendermintEvent `protobuf:"bytes,3,rep,name=events,proto3" json:"events,omitempty"`
+	TxHashes []string                  `protobuf:"bytes,4,rep,name=tx_hashes,json=txHashes,proto3" json:"tx_hashes,omitempty"`
 }
 
 func (x *IndexerTendermintBlock) Reset() {
 	*x = IndexerTendermintBlock{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_dydxprotocol_indexer_payload_event_proto_msgTypes[2]
+		mi := &file_dydxprotocol_indexer_payload_event_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1866,7 +1627,7 @@ func (*IndexerTendermintBlock) ProtoMessage() {}
 
 // Deprecated: Use IndexerTendermintBlock.ProtoReflect.Descriptor instead.
 func (*IndexerTendermintBlock) Descriptor() ([]byte, []int) {
-	return file_dydxprotocol_indexer_payload_event_proto_rawDescGZIP(), []int{2}
+	return file_dydxprotocol_indexer_payload_event_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *IndexerTendermintBlock) GetHeight() uint32 {
@@ -1883,9 +1644,9 @@ func (x *IndexerTendermintBlock) GetTime() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *IndexerTendermintBlock) GetTxEvents() []*TransactionEvents {
+func (x *IndexerTendermintBlock) GetEvents() []*IndexerTendermintEvent {
 	if x != nil {
-		return x.TxEvents
+		return x.Events
 	}
 	return nil
 }
@@ -1908,46 +1669,55 @@ var file_dydxprotocol_indexer_payload_event_proto_rawDesc = []byte{
 	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74,
 	0x61, 0x6d, 0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x14, 0x67, 0x6f, 0x67, 0x6f, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22,
-	0x46, 0x0a, 0x16, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x54, 0x65, 0x6e, 0x64, 0x65, 0x72,
-	0x6d, 0x69, 0x6e, 0x74, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x62,
-	0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x73, 0x75, 0x62, 0x74,
-	0x79, 0x70, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x61, 0x0a, 0x11, 0x54, 0x72, 0x61, 0x6e, 0x73,
-	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x73, 0x12, 0x4c, 0x0a, 0x06,
-	0x65, 0x76, 0x65, 0x6e, 0x74, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x34, 0x2e, 0x64,
-	0x79, 0x64, 0x78, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x69, 0x6e, 0x64, 0x65,
-	0x78, 0x65, 0x72, 0x2e, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x2e, 0x49, 0x6e, 0x64, 0x65,
-	0x78, 0x65, 0x72, 0x54, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74, 0x45, 0x76, 0x65,
-	0x6e, 0x74, 0x52, 0x06, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x73, 0x22, 0xd5, 0x01, 0x0a, 0x16, 0x49,
+	0xb7, 0x02, 0x0a, 0x16, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x54, 0x65, 0x6e, 0x64, 0x65,
+	0x72, 0x6d, 0x69, 0x6e, 0x74, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75,
+	0x62, 0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x73, 0x75, 0x62,
+	0x74, 0x79, 0x70, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x12, 0x2d, 0x0a, 0x11, 0x74, 0x72, 0x61, 0x6e,
+	0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x10, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
+	0x6f, 0x6e, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x67, 0x0a, 0x0e, 0x69, 0x73, 0x5f, 0x62, 0x6c,
+	0x6f, 0x63, 0x6b, 0x5f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0e, 0x32,
+	0x3f, 0x2e, 0x64, 0x79, 0x64, 0x78, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x69,
+	0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x2e, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x2e, 0x49,
 	0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x54, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74,
-	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x38, 0x0a,
-	0x04, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f,
-	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69,
-	0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x42, 0x08, 0xc8, 0xde, 0x1f, 0x00, 0x90, 0xdf, 0x1f,
-	0x01, 0x52, 0x04, 0x74, 0x69, 0x6d, 0x65, 0x12, 0x4c, 0x0a, 0x09, 0x74, 0x78, 0x5f, 0x65, 0x76,
-	0x65, 0x6e, 0x74, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x64, 0x79, 0x64,
-	0x78, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65,
-	0x72, 0x2e, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61,
-	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x73, 0x52, 0x08, 0x74, 0x78, 0x45,
-	0x76, 0x65, 0x6e, 0x74, 0x73, 0x12, 0x1b, 0x0a, 0x09, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68,
-	0x65, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x08, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68,
-	0x65, 0x73, 0x42, 0xef, 0x01, 0x0a, 0x20, 0x63, 0x6f, 0x6d, 0x2e, 0x64, 0x79, 0x64, 0x78, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x2e,
-	0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x42, 0x0a, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x50, 0x72,
-	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x2d, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b,
-	0x2e, 0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x64, 0x79, 0x64, 0x78, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x63, 0x6f, 0x6c, 0x2f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x2f, 0x70, 0x61, 0x79,
-	0x6c, 0x6f, 0x61, 0x64, 0xa2, 0x02, 0x03, 0x44, 0x49, 0x50, 0xaa, 0x02, 0x1c, 0x44, 0x79, 0x64,
-	0x78, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65,
-	0x72, 0x2e, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0xca, 0x02, 0x1c, 0x44, 0x79, 0x64, 0x78,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x5c, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72,
-	0x5c, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0xe2, 0x02, 0x28, 0x44, 0x79, 0x64, 0x78, 0x70,
+	0x45, 0x76, 0x65, 0x6e, 0x74, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x45, 0x76, 0x65, 0x6e, 0x74,
+	0x48, 0x00, 0x52, 0x0c, 0x69, 0x73, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x45, 0x76, 0x65, 0x6e, 0x74,
+	0x12, 0x1f, 0x0a, 0x0b, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18,
+	0x05, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0a, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x49, 0x6e, 0x64, 0x65,
+	0x78, 0x22, 0x1d, 0x0a, 0x0a, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x12,
+	0x0f, 0x0a, 0x0b, 0x42, 0x4c, 0x4f, 0x43, 0x4b, 0x5f, 0x45, 0x56, 0x45, 0x4e, 0x54, 0x10, 0x00,
+	0x42, 0x17, 0x0a, 0x15, 0x6f, 0x72, 0x64, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x5f, 0x77, 0x69, 0x74,
+	0x68, 0x69, 0x6e, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x22, 0xd5, 0x01, 0x0a, 0x16, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x65, 0x72, 0x54, 0x65, 0x6e, 0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74, 0x42,
+	0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0d, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x38, 0x0a, 0x04,
+	0x74, 0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d,
+	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x42, 0x08, 0xc8, 0xde, 0x1f, 0x00, 0x90, 0xdf, 0x1f, 0x01,
+	0x52, 0x04, 0x74, 0x69, 0x6d, 0x65, 0x12, 0x4c, 0x0a, 0x06, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x73,
+	0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x34, 0x2e, 0x64, 0x79, 0x64, 0x78, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x2e, 0x70, 0x61,
+	0x79, 0x6c, 0x6f, 0x61, 0x64, 0x2e, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x54, 0x65, 0x6e,
+	0x64, 0x65, 0x72, 0x6d, 0x69, 0x6e, 0x74, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x06, 0x65, 0x76,
+	0x65, 0x6e, 0x74, 0x73, 0x12, 0x1b, 0x0a, 0x09, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x65,
+	0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x08, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68, 0x65,
+	0x73, 0x42, 0xef, 0x01, 0x0a, 0x20, 0x63, 0x6f, 0x6d, 0x2e, 0x64, 0x79, 0x64, 0x78, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x2e, 0x70,
+	0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x42, 0x0a, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f,
+	0x74, 0x6f, 0x50, 0x01, 0x5a, 0x2d, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x73, 0x64, 0x6b, 0x2e,
+	0x69, 0x6f, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x64, 0x79, 0x64, 0x78, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x63, 0x6f, 0x6c, 0x2f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x2f, 0x70, 0x61, 0x79, 0x6c,
+	0x6f, 0x61, 0x64, 0xa2, 0x02, 0x03, 0x44, 0x49, 0x50, 0xaa, 0x02, 0x1c, 0x44, 0x79, 0x64, 0x78,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x2e, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72,
+	0x2e, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0xca, 0x02, 0x1c, 0x44, 0x79, 0x64, 0x78, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x5c, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x5c,
-	0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64,
-	0x61, 0x74, 0x61, 0xea, 0x02, 0x1e, 0x44, 0x79, 0x64, 0x78, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63,
-	0x6f, 0x6c, 0x3a, 0x3a, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x3a, 0x3a, 0x50, 0x61, 0x79,
-	0x6c, 0x6f, 0x61, 0x64, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0xe2, 0x02, 0x28, 0x44, 0x79, 0x64, 0x78, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c, 0x5c, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x5c, 0x50,
+	0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
+	0x74, 0x61, 0xea, 0x02, 0x1e, 0x44, 0x79, 0x64, 0x78, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f,
+	0x6c, 0x3a, 0x3a, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x65, 0x72, 0x3a, 0x3a, 0x50, 0x61, 0x79, 0x6c,
+	0x6f, 0x61, 0x64, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1962,17 +1732,18 @@ func file_dydxprotocol_indexer_payload_event_proto_rawDescGZIP() []byte {
 	return file_dydxprotocol_indexer_payload_event_proto_rawDescData
 }
 
-var file_dydxprotocol_indexer_payload_event_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_dydxprotocol_indexer_payload_event_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_dydxprotocol_indexer_payload_event_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_dydxprotocol_indexer_payload_event_proto_goTypes = []interface{}{
-	(*IndexerTendermintEvent)(nil), // 0: dydxprotocol.indexer.payload.IndexerTendermintEvent
-	(*TransactionEvents)(nil),      // 1: dydxprotocol.indexer.payload.TransactionEvents
-	(*IndexerTendermintBlock)(nil), // 2: dydxprotocol.indexer.payload.IndexerTendermintBlock
-	(*timestamppb.Timestamp)(nil),  // 3: google.protobuf.Timestamp
+	(IndexerTendermintEvent_BlockEvent)(0), // 0: dydxprotocol.indexer.payload.IndexerTendermintEvent.BlockEvent
+	(*IndexerTendermintEvent)(nil),         // 1: dydxprotocol.indexer.payload.IndexerTendermintEvent
+	(*IndexerTendermintBlock)(nil),         // 2: dydxprotocol.indexer.payload.IndexerTendermintBlock
+	(*timestamppb.Timestamp)(nil),          // 3: google.protobuf.Timestamp
 }
 var file_dydxprotocol_indexer_payload_event_proto_depIdxs = []int32{
-	0, // 0: dydxprotocol.indexer.payload.TransactionEvents.events:type_name -> dydxprotocol.indexer.payload.IndexerTendermintEvent
+	0, // 0: dydxprotocol.indexer.payload.IndexerTendermintEvent.is_block_event:type_name -> dydxprotocol.indexer.payload.IndexerTendermintEvent.BlockEvent
 	3, // 1: dydxprotocol.indexer.payload.IndexerTendermintBlock.time:type_name -> google.protobuf.Timestamp
-	1, // 2: dydxprotocol.indexer.payload.IndexerTendermintBlock.tx_events:type_name -> dydxprotocol.indexer.payload.TransactionEvents
+	1, // 2: dydxprotocol.indexer.payload.IndexerTendermintBlock.events:type_name -> dydxprotocol.indexer.payload.IndexerTendermintEvent
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -1999,18 +1770,6 @@ func file_dydxprotocol_indexer_payload_event_proto_init() {
 			}
 		}
 		file_dydxprotocol_indexer_payload_event_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TransactionEvents); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_dydxprotocol_indexer_payload_event_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*IndexerTendermintBlock); i {
 			case 0:
 				return &v.state
@@ -2023,18 +1782,23 @@ func file_dydxprotocol_indexer_payload_event_proto_init() {
 			}
 		}
 	}
+	file_dydxprotocol_indexer_payload_event_proto_msgTypes[0].OneofWrappers = []interface{}{
+		(*IndexerTendermintEvent_TransactionIndex)(nil),
+		(*IndexerTendermintEvent_IsBlockEvent)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_dydxprotocol_indexer_payload_event_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   3,
+			NumEnums:      1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_dydxprotocol_indexer_payload_event_proto_goTypes,
 		DependencyIndexes: file_dydxprotocol_indexer_payload_event_proto_depIdxs,
+		EnumInfos:         file_dydxprotocol_indexer_payload_event_proto_enumTypes,
 		MessageInfos:      file_dydxprotocol_indexer_payload_event_proto_msgTypes,
 	}.Build()
 	File_dydxprotocol_indexer_payload_event_proto = out.File
