@@ -30,6 +30,10 @@ func contains[T comparable](s []T, e T) int {
 	return -1
 }
 
+func (eventManager *IndexerBlockEventManager) SetBlock(block *IndexerTendermintBlock) {
+	eventManager.block = block
+}
+
 // addTransactionHash adds a transaction hash to the block event manager if this is a new transaction
 // hash. Returns the index of the new/existing transaction hash in the block event manager.
 func (eventManager *IndexerBlockEventManager) addTransactionHash(txHash string) int {
