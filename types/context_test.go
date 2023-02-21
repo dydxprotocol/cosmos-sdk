@@ -66,7 +66,12 @@ func (s *contextTestSuite) TestCacheContextIndexerEvents() {
 	blockTime := time.Unix(1650000000, 0).UTC()
 	blockHeight := int64(5)
 
-	ctx := testutil.DefaultContext(key, types.NewTransientStoreKey("transient_"+s.T().Name())).WithBlockHeight(blockHeight).WithBlockTime(blockTime)
+	ctx := testutil.DefaultContext(key, types.NewTransientStoreKey("transient_"+s.T().Name())).
+		WithBlockHeight(blockHeight).
+		WithBlockTime(blockTime).
+		WithIndexerBlockEventManager(types.NewIndexerBlockEventManager(
+			uint32(blockHeight), blockTime),
+		)
 	store := ctx.KVStore(key)
 	store.Set(k1, v1)
 	s.Require().Equal(v1, store.Get(k1))

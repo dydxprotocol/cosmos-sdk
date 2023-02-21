@@ -309,7 +309,7 @@ func (c Context) CacheContext() (cc Context, writeCache func()) {
 	cc = c.WithMultiStore(cms).WithEventManager(
 		NewEventManager(),
 	).WithIndexerBlockEventManager(
-		NewIndexerBlockEventManager(c.indexerBlockEventManager.height, c.indexerBlockEventManager.time),
+		NewIndexerBlockEventManager(c.indexerBlockEventManager.GetHeight(), c.indexerBlockEventManager.GetTime()),
 	)
 
 	writeCache = func() {

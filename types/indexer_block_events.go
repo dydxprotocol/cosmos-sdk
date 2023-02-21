@@ -29,7 +29,8 @@ func (eventManager *IndexerBlockEventManager) MergeEvents(mgr *IndexerBlockEvent
 	if eventManager.height != mgr.height {
 		return
 	}
-	for txHash, events := range mgr.txEventsMap {
+	for _, txHash := range mgr.txHashes {
+		events := mgr.txEventsMap[txHash]
 		for _, event := range events {
 			eventManager.AddTxnEvent(txHash, event.Subtype, event.Data)
 		}
@@ -49,6 +50,14 @@ func (eventManager *IndexerBlockEventManager) AddTxnEvent(txHash string, subType
 		eventManager.txHashes = append(eventManager.txHashes, txHash)
 		eventManager.txEventsMap[txHash] = []*IndexerTendermintEvent{&event}
 	}
+}
+
+func (eventManager *IndexerBlockEventManager) GetHeight() uint32 {
+	return eventManager.height
+}
+
+func (eventManager *IndexerBlockEventManager) GetTime() time.Time {
+	return eventManager.time
 }
 
 // ProduceBlock returns the block. It should only be called in EndBlocker. Otherwise, the block is
