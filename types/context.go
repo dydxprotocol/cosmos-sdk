@@ -313,7 +313,8 @@ func (c Context) CacheContext() (cc Context, writeCache func()) {
 
 	writeCache = func() {
 		c.EventManager().EmitEvents(cc.EventManager().Events())
-		c.IndexerBlockEventManager().SetBlock(cc.IndexerBlockEventManager().GetBlock())
+		c.IndexerBlockEventManager().
+			SetAttributes(cc.IndexerBlockEventManager())
 		cms.Write()
 	}
 
