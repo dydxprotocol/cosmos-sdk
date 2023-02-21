@@ -9,7 +9,7 @@ type IndexerBlockEventManager struct {
 	time     time.Time
 	txHashes []string
 	// map from tx hash to list of tx events
-	txEventsMap map[string][]IndexerTendermintEvent
+	txEventsMap map[string][]*IndexerTendermintEvent
 }
 
 // NewIndexerBlockEventManager returns a new IndexerBlockEventManager.
@@ -17,21 +17,18 @@ type IndexerBlockEventManager struct {
 func NewIndexerBlockEventManager() *IndexerBlockEventManager {
 	return &IndexerBlockEventManager{
 		txHashes:    []string{},
-		txEventsMap: make(map[string][]IndexerTendermintEvent),
+		txEventsMap: make(map[string][]*IndexerTendermintEvent),
 	}
 }
 
-func (eventManager *IndexerBlockEventManager) SetAttributes(mgr *IndexerBlockEventManager) {
-	eventManager.height = mgr.height
-	eventManager.time = mgr.time
-	// deep copy txHashes
-	eventManager.txHashes = make([]string, len(mgr.txHashes))
-	eventManager.txHashes = append(eventManager.txHashes, mgr.txHashes...)
-	// deep copy txEventsMap
-	eventManager.txEventsMap = make(map[string][]IndexerTendermintEvent)
+func (eventManager *IndexerBlockEventManager) MergeEvents(mgr *IndexerBlockEventManager) {
+	if eventManager.height != mgr.height || eventManager.time != mgr.time {
+		return
+	}
 	for txHash, events := range mgr.txEventsMap {
-		eventManager.txEventsMap[txHash] = make([]IndexerTendermintEvent, len(events))
-		eventManager.txEventsMap[txHash] = append(eventManager.txEventsMap[txHash], events...)
+		for _, event := range events {
+			eventManager.AddTxnEvent(txHash, event.Subtype, event.Data)
+		}
 	}
 }
 
@@ -43,10 +40,10 @@ func (eventManager *IndexerBlockEventManager) AddTxnEvent(txHash string, subType
 		Data:    data,
 	}
 	if txEvents, ok := eventManager.txEventsMap[txHash]; ok {
-		eventManager.txEventsMap[txHash] = append(txEvents, event)
+		eventManager.txEventsMap[txHash] = append(txEvents, &event)
 	} else {
 		eventManager.txHashes = append(eventManager.txHashes, txHash)
-		eventManager.txEventsMap[txHash] = []IndexerTendermintEvent{event}
+		eventManager.txEventsMap[txHash] = []*IndexerTendermintEvent{&event}
 	}
 }
 
@@ -82,9 +79,8 @@ func (eventManager *IndexerBlockEventManager) ProduceBlock() *IndexerTendermintB
 	// build list of tx events
 	var txEvents []*IndexerTendermintEvent
 	for _, txHash := range eventManager.txHashes {
-		for _, event := range eventManager.txEventsMap[txHash] {
-			txEvents = append(txEvents, &event)
-		}
+		txEvents = append(txEvents, eventManager.txEventsMap[txHash]...)
+
 	}
 	return &IndexerTendermintBlock{
 		Height:   eventManager.height,

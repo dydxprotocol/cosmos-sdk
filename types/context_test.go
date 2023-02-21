@@ -57,6 +57,79 @@ func (s *contextTestSuite) TestCacheContext() {
 	s.Require().Len(ctx.EventManager().Events(), 2)
 }
 
+func (s *contextTestSuite) TestCacheContextIndexerEvents() {
+	key := types.NewKVStoreKey(s.T().Name() + "_TestCacheContextIndexerEvents")
+	k1 := []byte("hello")
+	v1 := []byte("world")
+	k2 := []byte("key")
+	v2 := []byte("value")
+	blockTime := time.Unix(1650000000, 0).UTC()
+	blockHeight := int64(5)
+
+	ctx := testutil.DefaultContext(key, types.NewTransientStoreKey("transient_"+s.T().Name())).WithBlockHeight(blockHeight).WithBlockTime(blockTime)
+	ctx.IndexerBlockEventManager().SetBlockHeight(blockHeight)
+	ctx.IndexerBlockEventManager().SetBlockTime(blockTime)
+	store := ctx.KVStore(key)
+	store.Set(k1, v1)
+	s.Require().Equal(v1, store.Get(k1))
+	s.Require().Nil(store.Get(k2))
+
+	cctx, write := ctx.CacheContext()
+	cstore := cctx.KVStore(key)
+	s.Require().Equal(v1, cstore.Get(k1))
+	s.Require().Nil(cstore.Get(k2))
+
+	// add some txn events
+	txHash := "txHash"
+	txHash1 := "txHash1"
+	cctx.IndexerBlockEventManager().AddTxnEvent(txHash, "order_fill", "data3")
+	cctx.IndexerBlockEventManager().AddTxnEvent(txHash, "transfer", "data")
+	cctx.IndexerBlockEventManager().AddTxnEvent(txHash1, "subaccounts", "data2")
+	cstore.Set(k2, v2)
+	s.Require().Equal(v2, cstore.Get(k2))
+	s.Require().Nil(store.Get(k2))
+
+	write()
+
+	s.Require().Equal(v2, store.Get(k2))
+	block := ctx.IndexerBlockEventManager().ProduceBlock()
+	s.Require().Len(block.Events, 3)
+	expectedOrderFillEvent := types.IndexerTendermintEvent{
+		Subtype: "order_fill",
+		Data:    "data3",
+		OrderingWithinBlock: &types.IndexerTendermintEvent_TransactionIndex{
+			TransactionIndex: 0,
+		},
+		EventIndex: 0,
+	}
+
+	expectedTransferEvent := types.IndexerTendermintEvent{
+		Subtype: "transfer",
+		Data:    "data",
+		OrderingWithinBlock: &types.IndexerTendermintEvent_TransactionIndex{
+			TransactionIndex: 0,
+		},
+		EventIndex: 1,
+	}
+
+	expectedSubaccountEvent := types.IndexerTendermintEvent{
+		Subtype: "subaccounts",
+		Data:    "data2",
+		OrderingWithinBlock: &types.IndexerTendermintEvent_TransactionIndex{
+			TransactionIndex: 1,
+		},
+		EventIndex: 0,
+	}
+	s.Require().Equal(*block.Events[0], expectedOrderFillEvent)
+	s.Require().Equal(*block.Events[1], expectedTransferEvent)
+	s.Require().Equal(*block.Events[2], expectedSubaccountEvent)
+	s.Require().Len(block.TxHashes, 2)
+	s.Require().Equal(block.TxHashes[0], txHash)
+	s.Require().Equal(block.TxHashes[1], txHash1)
+	s.Require().Equal(block.Height, uint32(blockHeight))
+	s.Require().Equal(block.Time, blockTime)
+}
+
 func (s *contextTestSuite) TestLogContext() {
 	key := types.NewKVStoreKey(s.T().Name())
 	ctx := testutil.DefaultContext(key, types.NewTransientStoreKey("transient_"+s.T().Name()))
