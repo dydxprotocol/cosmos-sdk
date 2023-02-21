@@ -80,7 +80,6 @@ func (eventManager *IndexerBlockEventManager) ProduceBlock() *IndexerTendermintB
 	var txEvents []*IndexerTendermintEvent
 	for _, txHash := range eventManager.txHashes {
 		txEvents = append(txEvents, eventManager.txEventsMap[txHash]...)
-
 	}
 	return &IndexerTendermintBlock{
 		Height:   eventManager.height,
