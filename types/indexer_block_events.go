@@ -14,15 +14,19 @@ type IndexerBlockEventManager struct {
 
 // NewIndexerBlockEventManager returns a new IndexerBlockEventManager.
 // This should be called in BeginBlocker.
-func NewIndexerBlockEventManager() *IndexerBlockEventManager {
+func NewIndexerBlockEventManager(height uint32, time time.Time) *IndexerBlockEventManager {
 	return &IndexerBlockEventManager{
 		txHashes:    []string{},
 		txEventsMap: make(map[string][]*IndexerTendermintEvent),
+		height:      height,
+		time:        time,
 	}
 }
 
+// MergeEvents merges the events from another block event manager into this one if
+// the block heights are the same.
 func (eventManager *IndexerBlockEventManager) MergeEvents(mgr *IndexerBlockEventManager) {
-	if eventManager.height != mgr.height || eventManager.time != mgr.time {
+	if eventManager.height != mgr.height {
 		return
 	}
 	for txHash, events := range mgr.txEventsMap {
@@ -45,16 +49,6 @@ func (eventManager *IndexerBlockEventManager) AddTxnEvent(txHash string, subType
 		eventManager.txHashes = append(eventManager.txHashes, txHash)
 		eventManager.txEventsMap[txHash] = []*IndexerTendermintEvent{&event}
 	}
-}
-
-// SetBlockHeight sets the block height of the block event manager.
-func (eventManager *IndexerBlockEventManager) SetBlockHeight(blockHeight int64) {
-	eventManager.height = uint32(blockHeight)
-}
-
-// SetBlockTime sets the block time of the block event manager.
-func (eventManager *IndexerBlockEventManager) SetBlockTime(blockTime time.Time) {
-	eventManager.time = blockTime
 }
 
 // ProduceBlock returns the block. It should only be called in EndBlocker. Otherwise, the block is

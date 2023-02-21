@@ -112,7 +112,7 @@ func NewContext(ms MultiStore, header tmproto.Header, isCheckTx bool, logger log
 		gasMeter:                 storetypes.NewInfiniteGasMeter(),
 		minGasPrice:              DecCoins{},
 		eventManager:             NewEventManager(),
-		indexerBlockEventManager: NewIndexerBlockEventManager(),
+		indexerBlockEventManager: NewIndexerBlockEventManager(uint32(header.Height), header.Time),
 		kvGasConfig:              storetypes.KVGasConfig(),
 		transientKVGasConfig:     storetypes.TransientGasConfig(),
 	}
@@ -298,7 +298,8 @@ func (c Context) TransientStore(key storetypes.StoreKey) KVStore {
 }
 
 // CacheContext returns a new Context with the multi-store cached, a new
-// EventManager, and a new IndexerBlockEventManager. The cached context is written
+// EventManager, and a new IndexerBlockEventManager. The IndexerBlockEventManager is
+// initialized with the same block height and time as the parent context. The cached context is written
 // to the context when writeCache is called. Note, events are automatically emitted
 // on the parent context's EventManager when the caller executes the write. Also,
 // the parent context's IndexerBlockEventManager is updated with the cached context's
@@ -308,10 +309,8 @@ func (c Context) CacheContext() (cc Context, writeCache func()) {
 	cc = c.WithMultiStore(cms).WithEventManager(
 		NewEventManager(),
 	).WithIndexerBlockEventManager(
-		NewIndexerBlockEventManager(),
+		NewIndexerBlockEventManager(c.indexerBlockEventManager.height, c.indexerBlockEventManager.time),
 	)
-	cc.IndexerBlockEventManager().SetBlockHeight(c.BlockHeight())
-	cc.IndexerBlockEventManager().SetBlockTime(c.BlockTime())
 
 	writeCache = func() {
 		c.EventManager().EmitEvents(cc.EventManager().Events())
