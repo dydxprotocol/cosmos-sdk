@@ -27,7 +27,7 @@ func NewIndexerBlockEventManager(height uint32, time time.Time) *IndexerBlockEve
 // the block heights are the same.
 func (eventManager *IndexerBlockEventManager) MergeEvents(mgr *IndexerBlockEventManager) {
 	if eventManager.height != mgr.height {
-		return
+		panic("cannot merge events from different blocks")
 	}
 	for _, txHash := range mgr.txHashes {
 		events := mgr.txEventsMap[txHash]
@@ -39,6 +39,7 @@ func (eventManager *IndexerBlockEventManager) MergeEvents(mgr *IndexerBlockEvent
 
 // AddTxnEvent adds a transaction event to the block event manager. If the transaction hash is not already in the
 // block event manager, it is also added.
+// TODO(DEC-1668): Add support for block events.
 func (eventManager *IndexerBlockEventManager) AddTxnEvent(txHash string, subType string, data string) {
 	event := IndexerTendermintEvent{
 		Subtype: subType,
@@ -69,6 +70,7 @@ func (eventManager *IndexerBlockEventManager) ProduceBlock() *IndexerTendermintB
 		txHashesMap[txHash] = i
 	}
 	// iterate through txEventsMap and add transaction/event indices to each event
+	// TODO(DEC-1668): Add support for block events.
 	for txHash, events := range eventManager.txEventsMap {
 		for i, event := range events {
 			event.OrderingWithinBlock = &IndexerTendermintEvent_TransactionIndex{

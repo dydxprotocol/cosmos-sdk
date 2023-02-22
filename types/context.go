@@ -299,11 +299,9 @@ func (c Context) TransientStore(key storetypes.StoreKey) KVStore {
 
 // CacheContext returns a new Context with the multi-store cached, a new
 // EventManager, and a new IndexerBlockEventManager. The IndexerBlockEventManager is
-// initialized with the same block height and time as the parent context. The cached context is written
-// to the context when writeCache is called. Note, events are automatically emitted
-// on the parent context's EventManager when the caller executes the write. Also,
-// the parent context's IndexerBlockEventManager is updated with the cached context's
-// IndexerBlockEventManager.
+// initialized with the same block height and time as the parent context. When writeCache
+// is called, the cached context is written to the parent context. When writing, respective
+// // events are appended to the parent context's EventManager/IndexerBlockEventManager.
 func (c Context) CacheContext() (cc Context, writeCache func()) {
 	cms := c.MultiStore().CacheMultiStore()
 	cc = c.WithMultiStore(cms).WithEventManager(

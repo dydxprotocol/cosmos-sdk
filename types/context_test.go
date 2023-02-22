@@ -2,6 +2,7 @@ package types_test
 
 import (
 	"context"
+	constants "github.com/cosmos/cosmos-sdk/types/testutil"
 	"testing"
 	"time"
 
@@ -83,11 +84,9 @@ func (s *contextTestSuite) TestCacheContextIndexerEvents() {
 	s.Require().Nil(cstore.Get(k2))
 
 	// add some txn events
-	txHash := "txHash"
-	txHash1 := "txHash1"
-	cctx.IndexerBlockEventManager().AddTxnEvent(txHash, "order_fill", "data3")
-	cctx.IndexerBlockEventManager().AddTxnEvent(txHash, "transfer", "data")
-	cctx.IndexerBlockEventManager().AddTxnEvent(txHash1, "subaccounts", "data2")
+	cctx.IndexerBlockEventManager().AddTxnEvent(constants.TxHash, constants.OrderFillSubtype, constants.Data3)
+	cctx.IndexerBlockEventManager().AddTxnEvent(constants.TxHash, constants.TransferSubtype, constants.Data)
+	cctx.IndexerBlockEventManager().AddTxnEvent(constants.TxHash1, constants.SubaccountSubtype, constants.Data2)
 	cstore.Set(k2, v2)
 	s.Require().Equal(v2, cstore.Get(k2))
 	s.Require().Nil(store.Get(k2))
@@ -96,41 +95,15 @@ func (s *contextTestSuite) TestCacheContextIndexerEvents() {
 
 	s.Require().Equal(v2, store.Get(k2))
 	block := ctx.IndexerBlockEventManager().ProduceBlock()
+
 	s.Require().Len(block.Events, 3)
-	expectedOrderFillEvent := types.IndexerTendermintEvent{
-		Subtype: "order_fill",
-		Data:    "data3",
-		OrderingWithinBlock: &types.IndexerTendermintEvent_TransactionIndex{
-			TransactionIndex: 0,
-		},
-		EventIndex: 0,
-	}
 
-	expectedTransferEvent := types.IndexerTendermintEvent{
-		Subtype: "transfer",
-		Data:    "data",
-		OrderingWithinBlock: &types.IndexerTendermintEvent_TransactionIndex{
-			TransactionIndex: 0,
-		},
-		EventIndex: 1,
-	}
-
-	expectedSubaccountEvent := types.IndexerTendermintEvent{
-		Subtype: "subaccounts",
-		Data:    "data2",
-		OrderingWithinBlock: &types.IndexerTendermintEvent_TransactionIndex{
-			TransactionIndex: 1,
-		},
-		EventIndex: 0,
-	}
-	s.Require().Equal(*block.Events[0], expectedOrderFillEvent)
-	s.Require().Equal(*block.Events[1], expectedTransferEvent)
-	s.Require().Equal(*block.Events[2], expectedSubaccountEvent)
-	s.Require().Len(block.TxHashes, 2)
-	s.Require().Equal(block.TxHashes[0], txHash)
-	s.Require().Equal(block.TxHashes[1], txHash1)
-	s.Require().Equal(block.Height, uint32(blockHeight))
-	s.Require().Equal(block.Time, blockTime)
+	s.Require().Equal(constants.OrderFillEvent, *block.Events[0])
+	s.Require().Equal(constants.TransferEvent, *block.Events[1])
+	s.Require().Equal(constants.SubaccountEvent, *block.Events[2])
+	s.Require().Equal([]string{constants.TxHash, constants.TxHash1}, block.TxHashes)
+	s.Require().Equal(constants.BlockHeight, block.Height)
+	s.Require().Equal(constants.BlockTime, block.Time)
 }
 
 func (s *contextTestSuite) TestLogContext() {
