@@ -23,6 +23,10 @@ type EndBlocker func(ctx Context, req abci.RequestEndBlock) abci.ResponseEndBloc
 // branched for the new block.
 type Commiter func(ctx Context)
 
+// Precommiter runs code during commit before the `deliverState` is reset. For the Dydx chain, it is currently
+// being used to send aggregated Indexer on-chain events to Kafka.
+type Precommiter func(ctx Context)
+
 // PeerFilter responds to p2p filtering queries from Tendermint
 type PeerFilter func(info string) abci.ResponseQuery
 

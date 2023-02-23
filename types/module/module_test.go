@@ -105,6 +105,10 @@ func TestManagerOrderSetters(t *testing.T) {
 	require.Equal(t, []string{"module1", "module2"}, mm.OrderCommiters)
 	mm.SetOrderCommiters("module2", "module1")
 	require.Equal(t, []string{"module2", "module1"}, mm.OrderCommiters)
+
+	require.Equal(t, []string{"module1", "module2"}, mm.OrderPrecommiters)
+	mm.SetOrderPrecommiters("module2", "module1")
+	require.Equal(t, []string{"module2", "module1"}, mm.OrderPrecommiters)
 }
 
 func TestManager_RegisterInvariants(t *testing.T) {
@@ -269,4 +273,21 @@ func TestManager_Commit(t *testing.T) {
 	mockAppModule1.EXPECT().Commit(gomock.Any()).Times(1)
 	mockAppModule2.EXPECT().Commit(gomock.Any()).Times(1)
 	mm.Commit(sdk.Context{})
+}
+
+func TestManager_Precommit(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	t.Cleanup(mockCtrl.Finish)
+
+	mockAppModule1 := mock.NewMockPrecommitAppModule(mockCtrl)
+	mockAppModule2 := mock.NewMockPrecommitAppModule(mockCtrl)
+	mockAppModule1.EXPECT().Name().Times(2).Return("module1")
+	mockAppModule2.EXPECT().Name().Times(2).Return("module2")
+	mm := module.NewManager(mockAppModule1, mockAppModule2)
+	require.NotNil(t, mm)
+	require.Equal(t, 2, len(mm.Modules))
+
+	mockAppModule1.EXPECT().Precommit(gomock.Any()).Times(1)
+	mockAppModule2.EXPECT().Precommit(gomock.Any()).Times(1)
+	mm.Precommit(sdk.Context{})
 }

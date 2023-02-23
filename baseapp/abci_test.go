@@ -153,6 +153,27 @@ func TestCommiterCalledWithCheckState(t *testing.T) {
 	require.Equal(t, true, wasCommiterCalled)
 }
 
+// Verifies that the Precommiter is called with the deliverState.
+func TestPrecommiterCalledWithDeliverState(t *testing.T) {
+	t.Parallel()
+
+	logger := defaultLogger()
+	db := dbm.NewMemDB()
+	name := t.Name()
+	app := NewBaseApp(name, logger, db, nil)
+
+	wasPrecommiterCalled := false
+	app.precommiter = func(ctx sdk.Context) {
+		require.Equal(t, app.deliverState.ctx, ctx)
+		wasPrecommiterCalled = true
+	}
+
+	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{Height: 1}})
+	app.Commit()
+
+	require.Equal(t, true, wasPrecommiterCalled)
+}
+
 // Test and ensure that invalid block heights always cause errors.
 // See issues:
 // - https://github.com/cosmos/cosmos-sdk/issues/11220
