@@ -421,6 +421,9 @@ func TestBaseAppOptionSeal(t *testing.T) {
 		app.SetCommiter(nil)
 	})
 	require.Panics(t, func() {
+		app.SetPrecommiter(nil)
+	})
+	require.Panics(t, func() {
 		app.SetAnteHandler(nil)
 	})
 	require.Panics(t, func() {
@@ -1030,6 +1033,33 @@ func TestBaseApp_Commit(t *testing.T) {
 
 	app.Commit()
 	require.Equal(t, true, wasCommiterCalled)
+}
+
+func TestBaseApp_Precommit(t *testing.T) {
+	db := dbm.NewMemDB()
+	name := t.Name()
+	logger := defaultLogger()
+
+	cp := &tmproto.ConsensusParams{
+		Block: &tmproto.BlockParams{
+			MaxGas: 5000000,
+		},
+	}
+
+	app := baseapp.NewBaseApp(name, logger, db, nil)
+	app.SetParamStore(&paramStore{db: dbm.NewMemDB()})
+	app.InitChain(abci.RequestInitChain{
+		ConsensusParams: cp,
+	})
+
+	wasPrecommiterCalled := false
+	app.SetPrecommiter(func(ctx sdk.Context) {
+		wasPrecommiterCalled = true
+	})
+	app.Seal()
+
+	app.Commit()
+	require.Equal(t, true, wasPrecommiterCalled)
 }
 
 // Test that txs can be unmarshalled and read and that

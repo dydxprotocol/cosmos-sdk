@@ -211,6 +211,12 @@ type CommitAppModule interface {
 	Commit(sdk.Context)
 }
 
+// PreommitAppModule is an extension interface that contains information about the AppModule and Precommit.
+type PrecommitAppModule interface {
+	AppModule
+	Precommit(sdk.Context)
+}
+
 // GenesisOnlyAppModule is an AppModule that only has import/export functionality
 type GenesisOnlyAppModule struct {
 	AppModuleGenesis
@@ -258,6 +264,7 @@ type Manager struct {
 	OrderBeginBlockers []string
 	OrderEndBlockers   []string
 	OrderCommiters     []string
+	OrderPrecommiters  []string
 	OrderMigrations    []string
 }
 
@@ -276,6 +283,7 @@ func NewManager(modules ...AppModule) *Manager {
 		OrderExportGenesis: modulesStr,
 		OrderBeginBlockers: modulesStr,
 		OrderCommiters:     modulesStr,
+		OrderPrecommiters:  modulesStr,
 		OrderEndBlockers:   modulesStr,
 	}
 }
@@ -320,6 +328,11 @@ func (m *Manager) SetOrderBeginBlockers(moduleNames ...string) {
 // SetOrderCommiters sets the order of set commiter calls
 func (m *Manager) SetOrderCommiters(moduleNames ...string) {
 	m.OrderCommiters = moduleNames
+}
+
+// SetOrderPrecommiters sets the order of set precommiter calls
+func (m *Manager) SetOrderPrecommiters(moduleNames ...string) {
+	m.OrderPrecommiters = moduleNames
 }
 
 // SetOrderEndBlockers sets the order of set end-blocker calls
@@ -620,6 +633,17 @@ func (m *Manager) Commit(ctx sdk.Context) {
 			continue
 		}
 		module.Commit(ctx)
+	}
+}
+
+// Precommit performs precommit functionality for all modules.
+func (m *Manager) Precommit(ctx sdk.Context) {
+	for _, moduleName := range m.OrderPrecommiters {
+		module, ok := m.Modules[moduleName].(PrecommitAppModule)
+		if !ok {
+			continue
+		}
+		module.Precommit(ctx)
 	}
 }
 

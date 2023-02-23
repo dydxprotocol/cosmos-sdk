@@ -396,6 +396,10 @@ func (app *BaseApp) Commit() abci.ResponseCommit {
 	app.setPrepareProposalState(header)
 	app.setProcessProposalState(header)
 
+	if app.precommiter != nil {
+		app.precommiter(app.deliverState.ctx)
+	}
+
 	// empty/reset the deliver state
 	app.deliverState = nil
 
