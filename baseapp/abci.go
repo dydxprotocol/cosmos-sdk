@@ -412,7 +412,13 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 // height.
 func (app *BaseApp) Commit() abci.ResponseCommit {
 	header := app.deliverState.ctx.BlockHeader()
+	app.Logger().Info("wliu header", header)
 	retainHeight := app.GetBlockRetentionHeight(header.Height)
+	app.Logger().Info("wliu abci events", app.deliverState.ctx.EventManager().Events())
+	app.Logger().Info("wliu abci events length", len(app.deliverState.ctx.EventManager().Events()))
+
+	app.Logger().Info("wliu checkState abci events", app.checkState.ctx.EventManager().Events())
+	app.Logger().Info("wliu checkState abci events length", len(app.checkState.ctx.EventManager().Events()))
 
 	// Write the DeliverTx state into branched storage and commit the MultiStore.
 	// The write to the DeliverTx state writes all state transitions to the root
@@ -443,6 +449,9 @@ func (app *BaseApp) Commit() abci.ResponseCommit {
 	app.setState(runTxProcessProposal, header)
 
 	if app.precommiter != nil {
+
+		app.Logger().Info("wliu precommiter abci events", app.deliverState.ctx.EventManager().Events())
+		app.Logger().Info("wliu precommiter abci events length", len(app.deliverState.ctx.EventManager().Events()))
 		app.precommiter(app.deliverState.ctx)
 	}
 
