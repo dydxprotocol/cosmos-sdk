@@ -52,7 +52,7 @@ To install the latest version of `cosmovisor`, run the following command:
 go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@latest
 ```
 
-To install a previous version, you can specify the version. IMPORTANT: Chains that use Cosmos-SDK v0.44.3 or earlier (eg v0.44.2) and want to use auto-download feature MUST use `cosmovisor v0.1.0`
+To install a previous version, you can specify the version. IMPORTANT: Chains that use Cosmos SDK v0.44.3 or earlier (eg v0.44.2) and want to use auto-download feature MUST use `cosmovisor v0.1.0`
 
 ```shell
 go install github.com/cosmos/cosmos-sdk/cosmovisor/cmd/cosmovisor@v0.1.0
@@ -298,9 +298,9 @@ Create a validator, and setup genesis transaction:
 
 ```shell
 ./build/simd keys add validator
-./build/simd add-genesis-account validator 1000000000stake --keyring-backend test
-./build/simd gentx validator 1000000stake --chain-id test
-./build/simd collect-gentxs
+./build/simd genesis add-genesis-account validator 1000000000stake --keyring-backend test
+./build/simd genesis gentx validator 1000000stake --chain-id test
+./build/simd genesis collect-gentxs
 ```
 
 #### Prepare Cosmovisor and Start the Chain

@@ -120,6 +120,8 @@ func (s *CLITestSuite) TestNewCmdSubmitProposal() {
 				}
 			}
 		],
+		"title": "My awesome title",
+		"summary": "My awesome description",
 		"metadata": "%s",
 		"deposit": "%s"
 	}`, authtypes.NewModuleAddress(types.ModuleName), base64.StdEncoding.EncodeToString(propMetadata), sdk.NewCoin("stake", sdk.NewInt(5431)))
@@ -295,7 +297,7 @@ func (s *CLITestSuite) TestNewCmdDeposit() {
 			true,
 		},
 		{
-			"deposit on non existing proposal",
+			"deposit on a proposal",
 			[]string{
 				"10",
 				sdk.NewCoin("stake", sdk.NewInt(10)).String(), // 10stake

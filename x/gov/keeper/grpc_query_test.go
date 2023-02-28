@@ -3,6 +3,7 @@ package keeper_test
 import (
 	gocontext "context"
 	"fmt"
+	"time"
 
 	"cosmossdk.io/math"
 
@@ -56,7 +57,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryProposal() {
 				testProposal := v1beta1.NewTextProposal("Proposal", "testing proposal")
 				msgContent, err := v1.NewLegacyContent(testProposal, govAcct.String())
 				suite.Require().NoError(err)
-				submittedProposal, err := suite.govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "")
+				submittedProposal, err := suite.govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "test", "summary", sdk.AccAddress("cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r"))
 				suite.Require().NoError(err)
 				suite.Require().NotEmpty(submittedProposal)
 
@@ -131,7 +132,7 @@ func (suite *KeeperTestSuite) TestLegacyGRPCQueryProposal() {
 				testProposal := v1beta1.NewTextProposal("Proposal", "testing proposal")
 				msgContent, err := v1.NewLegacyContent(testProposal, govAcct.String())
 				suite.Require().NoError(err)
-				submittedProposal, err := suite.govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "")
+				submittedProposal, err := suite.govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "test", "summary", sdk.AccAddress("cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r"))
 				suite.Require().NoError(err)
 				suite.Require().NotEmpty(submittedProposal)
 
@@ -197,7 +198,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryProposals() {
 					testProposal := []sdk.Msg{
 						v1.NewMsgVote(govAddress, uint64(i), v1.OptionYes, ""),
 					}
-					proposal, err := suite.govKeeper.SubmitProposal(ctx, testProposal, "")
+					proposal, err := suite.govKeeper.SubmitProposal(ctx, testProposal, "", "test", "summary", sdk.AccAddress("cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r"))
 					suite.Require().NotEmpty(proposal)
 					suite.Require().NoError(err)
 					testProposals = append(testProposals, &proposal)
@@ -335,7 +336,7 @@ func (suite *KeeperTestSuite) TestLegacyGRPCQueryProposals() {
 				testProposal := v1beta1.NewTextProposal("Proposal", "testing proposal")
 				msgContent, err := v1.NewLegacyContent(testProposal, govAcct.String())
 				suite.Require().NoError(err)
-				submittedProposal, err := suite.govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "")
+				submittedProposal, err := suite.govKeeper.SubmitProposal(ctx, []sdk.Msg{msgContent}, "", "test", "summary", sdk.AccAddress("cosmos1ghekyjucln7y67ntx7cf27m9dpuxxemn4c8g4r"))
 				suite.Require().NoError(err)
 				suite.Require().NotEmpty(submittedProposal)
 			},
@@ -416,7 +417,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryVote() {
 			"no votes present",
 			func() {
 				var err error
-				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "")
+				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "", "test", "summary", addrs[0])
 				suite.Require().NoError(err)
 
 				req = &v1.QueryVoteRequest{
@@ -530,7 +531,7 @@ func (suite *KeeperTestSuite) TestLegacyGRPCQueryVote() {
 			"no votes present",
 			func() {
 				var err error
-				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "")
+				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "", "test", "summary", addrs[0])
 				suite.Require().NoError(err)
 
 				req = &v1beta1.QueryVoteRequest{
@@ -636,7 +637,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryVotes() {
 			"create a proposal and get votes",
 			func() {
 				var err error
-				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "")
+				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "", "test", "summary", addrs[0])
 				suite.Require().NoError(err)
 
 				req = &v1.QueryVotesRequest{
@@ -738,7 +739,7 @@ func (suite *KeeperTestSuite) TestLegacyGRPCQueryVotes() {
 			"create a proposal and get votes",
 			func() {
 				var err error
-				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "")
+				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "", "test", "summary", addrs[0])
 				suite.Require().NoError(err)
 
 				req = &v1beta1.QueryVotesRequest{
@@ -1023,7 +1024,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryDeposit() {
 			"no deposits proposal",
 			func() {
 				var err error
-				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "")
+				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "", "test", "summary", addrs[0])
 				suite.Require().NoError(err)
 				suite.Require().NotNil(proposal)
 
@@ -1124,7 +1125,7 @@ func (suite *KeeperTestSuite) TestLegacyGRPCQueryDeposit() {
 			"no deposits proposal",
 			func() {
 				var err error
-				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "")
+				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "", "test", "summary", addrs[0])
 				suite.Require().NoError(err)
 				suite.Require().NotNil(proposal)
 
@@ -1214,7 +1215,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryDeposits() {
 			"create a proposal and get deposits",
 			func() {
 				var err error
-				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "")
+				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "", "test", "summary", addrs[0])
 				suite.Require().NoError(err)
 
 				req = &v1.QueryDepositsRequest{
@@ -1308,7 +1309,7 @@ func (suite *KeeperTestSuite) TestLegacyGRPCQueryDeposits() {
 			"create a proposal and get deposits",
 			func() {
 				var err error
-				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "")
+				proposal, err = suite.govKeeper.SubmitProposal(ctx, TestProposal, "", "test", "summary", addrs[0])
 				suite.Require().NoError(err)
 
 				req = &v1beta1.QueryDepositsRequest{
@@ -1356,6 +1357,278 @@ func (suite *KeeperTestSuite) TestLegacyGRPCQueryDeposits() {
 			} else {
 				suite.Require().Error(err)
 				suite.Require().Nil(deposits)
+			}
+		})
+	}
+}
+
+func (suite *KeeperTestSuite) TestGRPCQueryTallyResult() {
+	suite.reset()
+	ctx, queryClient := suite.ctx, suite.queryClient
+
+	var (
+		req      *v1.QueryTallyResultRequest
+		expTally *v1.TallyResult
+	)
+
+	testCases := []struct {
+		msg      string
+		malleate func()
+		expPass  bool
+	}{
+		{
+			"empty request",
+			func() {
+				req = &v1.QueryTallyResultRequest{}
+			},
+			false,
+		},
+		{
+			"non existing proposal request",
+			func() {
+				req = &v1.QueryTallyResultRequest{ProposalId: 2}
+			},
+			false,
+		},
+		{
+			"zero proposal id request",
+			func() {
+				req = &v1.QueryTallyResultRequest{ProposalId: 0}
+			},
+			false,
+		},
+		{
+			"valid request with proposal status passed",
+			func() {
+				propTime := time.Now()
+				proposal := v1.Proposal{
+					Id:     1,
+					Status: v1.StatusPassed,
+					FinalTallyResult: &v1.TallyResult{
+						YesCount:        "4",
+						AbstainCount:    "1",
+						NoCount:         "0",
+						NoWithVetoCount: "0",
+					},
+					SubmitTime:      &propTime,
+					VotingStartTime: &propTime,
+					VotingEndTime:   &propTime,
+					Metadata:        "proposal metadata",
+				}
+				suite.govKeeper.SetProposal(ctx, proposal)
+
+				req = &v1.QueryTallyResultRequest{ProposalId: proposal.Id}
+
+				expTally = &v1.TallyResult{
+					YesCount:        "4",
+					AbstainCount:    "1",
+					NoCount:         "0",
+					NoWithVetoCount: "0",
+				}
+			},
+			true,
+		},
+		{
+			"proposal status deposit",
+			func() {
+				propTime := time.Now()
+				proposal := v1.Proposal{
+					Id:              1,
+					Status:          v1.StatusDepositPeriod,
+					SubmitTime:      &propTime,
+					VotingStartTime: &propTime,
+					VotingEndTime:   &propTime,
+					Metadata:        "proposal metadata",
+				}
+				suite.govKeeper.SetProposal(ctx, proposal)
+
+				req = &v1.QueryTallyResultRequest{ProposalId: proposal.Id}
+
+				expTally = &v1.TallyResult{
+					YesCount:        "0",
+					AbstainCount:    "0",
+					NoCount:         "0",
+					NoWithVetoCount: "0",
+				}
+			},
+			true,
+		},
+		{
+			"proposal is in voting period",
+			func() {
+				propTime := time.Now()
+				proposal := v1.Proposal{
+					Id:              1,
+					Status:          v1.StatusVotingPeriod,
+					SubmitTime:      &propTime,
+					VotingStartTime: &propTime,
+					VotingEndTime:   &propTime,
+					Metadata:        "proposal metadata",
+				}
+				suite.govKeeper.SetProposal(ctx, proposal)
+
+				req = &v1.QueryTallyResultRequest{ProposalId: proposal.Id}
+
+				expTally = &v1.TallyResult{
+					YesCount:        "0",
+					AbstainCount:    "0",
+					NoCount:         "0",
+					NoWithVetoCount: "0",
+				}
+			},
+			true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		suite.Run(fmt.Sprintf("Case %s", testCase.msg), func() {
+			testCase.malleate()
+
+			tallyRes, err := queryClient.TallyResult(gocontext.Background(), req)
+
+			if testCase.expPass {
+				suite.Require().NoError(err)
+				suite.Require().NotEmpty(tallyRes.Tally.String())
+				suite.Require().Equal(expTally.String(), tallyRes.Tally.String())
+			} else {
+				suite.Require().Error(err)
+				suite.Require().Nil(tallyRes)
+			}
+		})
+	}
+}
+
+func (suite *KeeperTestSuite) TestLegacyGRPCQueryTallyResult() {
+	suite.reset()
+	ctx, queryClient := suite.ctx, suite.legacyQueryClient
+
+	var (
+		req      *v1beta1.QueryTallyResultRequest
+		expTally *v1beta1.TallyResult
+	)
+
+	testCases := []struct {
+		msg      string
+		malleate func()
+		expPass  bool
+	}{
+		{
+			"empty request",
+			func() {
+				req = &v1beta1.QueryTallyResultRequest{}
+			},
+			false,
+		},
+		{
+			"non existing proposal request",
+			func() {
+				req = &v1beta1.QueryTallyResultRequest{ProposalId: 2}
+			},
+			false,
+		},
+		{
+			"zero proposal id request",
+			func() {
+				req = &v1beta1.QueryTallyResultRequest{ProposalId: 0}
+			},
+			false,
+		},
+		{
+			"valid request with proposal status passed",
+			func() {
+				propTime := time.Now()
+				proposal := v1.Proposal{
+					Id:     1,
+					Status: v1.StatusPassed,
+					FinalTallyResult: &v1.TallyResult{
+						YesCount:        "4",
+						AbstainCount:    "1",
+						NoCount:         "0",
+						NoWithVetoCount: "0",
+					},
+					SubmitTime:      &propTime,
+					VotingStartTime: &propTime,
+					VotingEndTime:   &propTime,
+					Metadata:        "proposal metadata",
+				}
+				suite.govKeeper.SetProposal(ctx, proposal)
+
+				req = &v1beta1.QueryTallyResultRequest{ProposalId: proposal.Id}
+
+				expTally = &v1beta1.TallyResult{
+					Yes:        math.NewInt(4),
+					Abstain:    math.NewInt(1),
+					No:         math.NewInt(0),
+					NoWithVeto: math.NewInt(0),
+				}
+			},
+			true,
+		},
+		{
+			"proposal status deposit",
+			func() {
+				propTime := time.Now()
+				proposal := v1.Proposal{
+					Id:              1,
+					Status:          v1.StatusDepositPeriod,
+					SubmitTime:      &propTime,
+					VotingStartTime: &propTime,
+					VotingEndTime:   &propTime,
+					Metadata:        "proposal metadata",
+				}
+				suite.govKeeper.SetProposal(ctx, proposal)
+
+				req = &v1beta1.QueryTallyResultRequest{ProposalId: proposal.Id}
+
+				expTally = &v1beta1.TallyResult{
+					Yes:        math.NewInt(0),
+					Abstain:    math.NewInt(0),
+					No:         math.NewInt(0),
+					NoWithVeto: math.NewInt(0),
+				}
+			},
+			true,
+		},
+		{
+			"proposal is in voting period",
+			func() {
+				propTime := time.Now()
+				proposal := v1.Proposal{
+					Id:              1,
+					Status:          v1.StatusVotingPeriod,
+					SubmitTime:      &propTime,
+					VotingStartTime: &propTime,
+					VotingEndTime:   &propTime,
+					Metadata:        "proposal metadata",
+				}
+				suite.govKeeper.SetProposal(ctx, proposal)
+
+				req = &v1beta1.QueryTallyResultRequest{ProposalId: proposal.Id}
+
+				expTally = &v1beta1.TallyResult{
+					Yes:        math.NewInt(0),
+					Abstain:    math.NewInt(0),
+					No:         math.NewInt(0),
+					NoWithVeto: math.NewInt(0),
+				}
+			},
+			true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		suite.Run(fmt.Sprintf("Case %s", testCase.msg), func() {
+			testCase.malleate()
+
+			tallyRes, err := queryClient.TallyResult(gocontext.Background(), req)
+
+			if testCase.expPass {
+				suite.Require().NoError(err)
+				suite.Require().NotEmpty(tallyRes.Tally.String())
+				suite.Require().Equal(expTally.String(), tallyRes.Tally.String())
+			} else {
+				suite.Require().Error(err)
+				suite.Require().Nil(tallyRes)
 			}
 		})
 	}
