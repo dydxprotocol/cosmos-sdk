@@ -394,9 +394,6 @@ func TestBaseAppOptionSeal(t *testing.T) {
 		suite.baseApp.SetCommiter(nil)
 	})
 	require.Panics(t, func() {
-		suite.baseApp.SetPrecommiter(nil)
-	})
-	require.Panics(t, func() {
 		suite.baseApp.SetAnteHandler(nil)
 	})
 	require.Panics(t, func() {
