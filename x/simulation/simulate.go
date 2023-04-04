@@ -143,6 +143,7 @@ func SimulateFromSeed(
 			if r := recover(); r != nil {
 				_, _ = fmt.Fprintf(w, "simulation halted due to panic on block %d\n", header.Height)
 				logWriter.PrintLogs()
+				println(r)
 				panic(r)
 			}
 		}()

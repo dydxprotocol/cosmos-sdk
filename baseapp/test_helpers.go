@@ -16,7 +16,20 @@ func (app *BaseApp) SimCheck(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *
 	if err != nil {
 		return sdk.GasInfo{}, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
-	gasInfo, result, _, _, err := app.runTx(runTxModeCheck, bz)
+
+	preCtx := TxCtx{}
+	err = app.runPreTx(&preCtx, runTxModeCheck, bz)
+	if err != nil {
+		return sdk.GasInfo{}, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
+	}
+	err = app.runTxUnderLock(&preCtx)
+	if err != nil {
+		return preCtx.gInfo, nil, err
+	}
+	gasInfo, result, _, _, err := app.runPostTx(&preCtx)
+
+	//gasInfo, result, _, _, err := app.runTx(runTxModeCheck, bz)
+
 	return gasInfo, result, err
 }
 

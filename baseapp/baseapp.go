@@ -61,19 +61,21 @@ type BaseApp struct { //nolint: maligned
 	txDecoder         sdk.TxDecoder // unmarshal []byte into sdk.Tx
 	txEncoder         sdk.TxEncoder // marshal sdk.Tx into []byte
 
-	mempool         mempool.Mempool            // application side mempool
-	anteHandler     sdk.AnteHandler            // ante handler for fee and auth
-	postHandler     sdk.PostHandler            // post handler, optional, e.g. for tips
-	initChainer     sdk.InitChainer            // initialize state with validators and state blob
-	beginBlocker    sdk.BeginBlocker           // logic to run before any txs
-	processProposal sdk.ProcessProposalHandler // the handler which runs on ABCI ProcessProposal
-	prepareProposal sdk.PrepareProposalHandler // the handler which runs on ABCI PrepareProposal
-	endBlocker      sdk.EndBlocker             // logic to run after all txs, and to determine valset changes
-	commiter        sdk.Commiter               // logic to run during commit
-	precommiter     sdk.Precommiter            // logic to run during commit using the deliverState
-	addrPeerFilter  sdk.PeerFilter             // filter peers by address and port
-	idPeerFilter    sdk.PeerFilter             // filter peers by node ID
-	fauxMerkleMode  bool                       // if true, IAVL MountStores uses MountStoresDB for simulation speed.
+	mempool              mempool.Mempool            // application side mempool
+	anteHandler          sdk.AnteHandler            // ante handler for fee and auth
+	readOnlyAnteHandler  sdk.AnteHandler            // ante handler that perform read only operations
+	readWriteAnteHandler sdk.AnteHandler            // ante handler that perform read and write operations
+	postHandler          sdk.PostHandler            // post handler, optional, e.g. for tips
+	initChainer          sdk.InitChainer            // initialize state with validators and state blob
+	beginBlocker         sdk.BeginBlocker           // logic to run before any txs
+	processProposal      sdk.ProcessProposalHandler // the handler which runs on ABCI ProcessProposal
+	prepareProposal      sdk.PrepareProposalHandler // the handler which runs on ABCI PrepareProposal
+	endBlocker           sdk.EndBlocker             // logic to run after all txs, and to determine valset changes
+	commiter             sdk.Commiter               // logic to run during commit
+	precommiter          sdk.Precommiter            // logic to run during commit using the deliverState
+	addrPeerFilter       sdk.PeerFilter             // filter peers by address and port
+	idPeerFilter         sdk.PeerFilter             // filter peers by node ID
+	fauxMerkleMode       bool                       // if true, IAVL MountStores uses MountStoresDB for simulation speed.
 
 	// manages snapshots, i.e. dumps of app state at certain intervals
 	snapshotManager *snapshots.Manager
@@ -595,13 +597,180 @@ func (app *BaseApp) cacheTxContext(ctx sdk.Context, txBytes []byte) (sdk.Context
 	return ctx.WithMultiStore(msCache), msCache
 }
 
-// runTx processes a transaction within a given execution mode, encoded transaction
+func (app *BaseApp) runPreTx(preCtx *TxCtx, mode runTxMode, txBytes []byte) (err error) {
+	preCtx.mode = mode
+	// NOTE: GasWanted should be returned by the AnteHandler. GasUsed is
+	// determined by the GasMeter. We need access to the context to get the gas
+	// meter, so we initialize upfront.
+	var gasWanted uint64
+
+	preCtx.ctx = app.getContextForTx(mode, txBytes)
+
+	// only run the tx if there is block gas remaining
+	if mode == runTxModeDeliver && preCtx.ctx.BlockGasMeter().IsOutOfGas() {
+		return sdkerrors.Wrap(sdkerrors.ErrOutOfGas, "no block gas left to run tx")
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			recoveryMW := newOutOfGasRecoveryMiddleware(gasWanted, preCtx.ctx, app.runTxRecoveryMiddleware)
+			err = processRecovery(r, recoveryMW)
+		}
+
+		preCtx.gInfo = sdk.GasInfo{GasWanted: gasWanted, GasUsed: preCtx.ctx.GasMeter().GasConsumed()}
+	}()
+
+	tx, err := app.txDecoder(txBytes)
+	if err != nil {
+		preCtx.gInfo = sdk.GasInfo{}
+		return err
+	}
+	preCtx.tx = tx
+
+	msgs := tx.GetMsgs()
+	if err := validateBasicTxMsgs(msgs); err != nil {
+		preCtx.gInfo = sdk.GasInfo{}
+		return err
+	}
+
+	if app.readOnlyAnteHandler != nil {
+		// Require that AnteHandler ensures that
+		// writes do not happen if aborted/failed.  This may have some
+		// performance benefits, but it'll be more difficult to get right.
+		preCtx.ctx.WithEventManager(sdk.NewEventManager())
+		_, err := app.readOnlyAnteHandler(preCtx.ctx, tx, mode == runTxModeSimulate)
+
+		if err != nil {
+			preCtx.gInfo = sdk.GasInfo{}
+			return err
+		}
+	}
+
+	return err
+}
+
+// runTxUnderLock processes a transaction within a given execution mode, encoded transaction
 // bytes, and the decoded transaction itself. All state transitions occur through
 // a cached Context depending on the mode provided. State only gets persisted
 // if all messages get executed successfully and the execution mode is DeliverTx.
 // Note, gas execution info is always returned. A reference to a Result is
 // returned if the tx does not run out of gas and if all the messages are valid
 // and execute successfully. An error is returned otherwise.
+func (app *BaseApp) runTxUnderLock(preCtx *TxCtx) (err error) {
+	mode := preCtx.mode
+	// NOTE: GasWanted should be returned by the AnteHandler. GasUsed is
+	// determined by the GasMeter. We need access to the context to get the gas
+	// meter, so we initialize upfront.
+	var gasWanted uint64
+
+	ctx := preCtx.ctx
+	tx := preCtx.tx
+	msgs := tx.GetMsgs()
+	ms := ctx.MultiStore()
+
+	defer func() {
+		if r := recover(); r != nil {
+			recoveryMW := newOutOfGasRecoveryMiddleware(gasWanted, ctx, app.runTxRecoveryMiddleware)
+			err, preCtx.result = processRecovery(r, recoveryMW), nil
+		}
+
+		preCtx.gInfo = sdk.GasInfo{GasWanted: gasWanted, GasUsed: ctx.GasMeter().GasConsumed()}
+	}()
+
+	if app.readWriteAnteHandler != nil {
+		var (
+			anteCtx sdk.Context
+			msCache sdk.CacheMultiStore
+		)
+
+		// Branch context before AnteHandler call in case it aborts.
+		// This is required for both CheckTx and DeliverTx.
+		// Ref: https://github.com/cosmos/cosmos-sdk/issues/2772
+		//
+		// NOTE: Alternatively, we could require that AnteHandler ensures that
+		// writes do not happen if aborted/failed.  This may have some
+		// performance benefits, but it'll be more difficult to get right.
+		anteCtx, msCache = app.cacheTxContext(ctx, ctx.TxBytes())
+		newCtx, err := app.readWriteAnteHandler(anteCtx, tx, mode == runTxModeSimulate)
+
+		if !newCtx.IsZero() {
+			// At this point, newCtx.MultiStore() is a store branch, or something else
+			// replaced by the AnteHandler. We want the original multistore.
+			//
+			// Also, in the case of the tx aborting, we need to track gas consumed via
+			// the instantiated gas meter in the AnteHandler, so we update the context
+			// prior to returning.
+			preCtx.ctx = newCtx.WithMultiStore(ms)
+		}
+
+		preCtx.anteEvents = ctx.EventManager().Events()
+
+		// GasMeter expected to be set in AnteHandler
+		gasWanted = ctx.GasMeter().Limit()
+
+		if err != nil {
+			return err
+		}
+
+		preCtx.priority = ctx.Priority()
+		msCache.Write()
+	}
+
+	if mode == runTxModeCheck {
+		err = app.mempool.Insert(ctx, tx)
+		if err != nil {
+			return err
+		}
+	} else if mode == runTxModeDeliver {
+		err = app.mempool.Remove(tx)
+		if err != nil && !errors.Is(err, mempool.ErrTxNotFound) {
+			return fmt.Errorf("failed to remove tx from mempool: %w", err)
+		}
+	}
+
+	// Create a new Context based off of the existing Context with a MultiStore branch
+	// in case message processing fails. At this point, the MultiStore
+	// is a branch of a branch.
+	runMsgCtx, _ := app.cacheTxContext(ctx, ctx.TxBytes())
+
+	// Attempt to execute all messages and only update state if all messages pass
+	// and we're in DeliverTx. Note, runMsgs will never return a reference to a
+	// Result if any single message fails or does not have a registered Handler.
+	preCtx.result, err = app.runMsgs(runMsgCtx, msgs, mode)
+
+	if err == nil {
+
+		// Run optional postHandlers.
+		//
+		// Note: If the postHandler fails, we also revert the runMsgs state.
+		if app.postHandler != nil {
+			// The runMsgCtx context currently contains events emitted by the ante handler.
+			// We clear this to correctly order events without duplicates.
+			// Note that the state is still preserved.
+			postCtx := runMsgCtx.WithEventManager(sdk.NewEventManager())
+
+			newCtx, err := app.postHandler(postCtx, tx, mode == runTxModeSimulate, err == nil)
+			if err != nil {
+				return err
+			}
+
+			preCtx.result.Events = append(preCtx.result.Events, newCtx.EventManager().ABCIEvents()...)
+		}
+	}
+
+	return err
+}
+
+func (app *BaseApp) runPostTx(preCtx *TxCtx) (gInfo sdk.GasInfo, result *sdk.Result, anteEvents []abci.Event, priority int64, err error) {
+	anteEvents = preCtx.anteEvents.ToABCIEvents()
+	if len(anteEvents) > 0 && (preCtx.mode == runTxModeDeliver || preCtx.mode == runTxModeSimulate) {
+		// append the events in the order of occurrence
+		result.Events = append(anteEvents, result.Events...)
+	}
+
+	return preCtx.gInfo, preCtx.result, anteEvents, preCtx.priority, nil
+}
+
 func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, result *sdk.Result, anteEvents []abci.Event, priority int64, err error) {
 	// NOTE: GasWanted should be returned by the AnteHandler. GasUsed is
 	// determined by the GasMeter. We need access to the context to get the gas
@@ -753,6 +922,72 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 	}
 
 	return gInfo, result, anteEvents, priority, err
+}
+
+// runMsgs iterates through a list of messages and executes them with the provided
+// Context and execution mode. Messages will only be executed during simulation
+// and DeliverTx. An error is returned if any single message fails or if a
+// Handler does not exist for a given message route. Otherwise, a reference to a
+// Result is returned. The caller must not commit state if an error is returned.
+func (app *BaseApp) runMsgs2(ctx sdk.Context, msgs []sdk.Msg, mode runTxMode) (*sdk.Result, error) {
+	msgLogs := make(sdk.ABCIMessageLogs, 0, len(msgs))
+	events := sdk.EmptyEvents()
+	var msgResponses []*codectypes.Any
+
+	// NOTE: GasWanted is determined by the AnteHandler and GasUsed by the GasMeter.
+	for i, msg := range msgs {
+
+		if mode != runTxModeDeliver && mode != runTxModeSimulate {
+			break
+		}
+
+		handler := app.msgServiceRouter.Handler(msg)
+		if handler == nil {
+			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "can't route message %+v", msg)
+		}
+
+		// ADR 031 request type routing
+		msgResult, err := handler(ctx, msg)
+		if err != nil {
+			return nil, sdkerrors.Wrapf(err, "failed to execute message; message index: %d", i)
+		}
+
+		// create message events
+		msgEvents := createEvents(msgResult.GetEvents(), msg)
+
+		// append message events, data and logs
+		//
+		// Note: Each message result's data must be length-prefixed in order to
+		// separate each result.
+		events = events.AppendEvents(msgEvents)
+
+		// Each individual sdk.Result that went through the MsgServiceRouter
+		// (which should represent 99% of the Msgs now, since everyone should
+		// be using protobuf Msgs) has exactly one Msg response, set inside
+		// `WrapServiceResult`. We take that Msg response, and aggregate it
+		// into an array.
+		if len(msgResult.MsgResponses) > 0 {
+			msgResponse := msgResult.MsgResponses[0]
+			if msgResponse == nil {
+				return nil, sdkerrors.ErrLogic.Wrapf("got nil Msg response at index %d for msg %s", i, sdk.MsgTypeURL(msg))
+			}
+			msgResponses = append(msgResponses, msgResponse)
+		}
+
+		msgLogs = append(msgLogs, sdk.NewABCIMessageLog(uint32(i), msgResult.Log, msgEvents))
+	}
+
+	data, err := makeABCIData(msgResponses)
+	if err != nil {
+		return nil, sdkerrors.Wrap(err, "failed to marshal tx data")
+	}
+
+	return &sdk.Result{
+		Data:         data,
+		Log:          strings.TrimSpace(msgLogs.String()),
+		Events:       events.ToABCIEvents(),
+		MsgResponses: msgResponses,
+	}, nil
 }
 
 // runMsgs iterates through a list of messages and executes them with the provided

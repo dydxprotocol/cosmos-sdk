@@ -4,17 +4,18 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+
+	"github.com/cosmos/gogoproto/proto"
+	abci "github.com/tendermint/tendermint/abci/types"
+	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+
+	"google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 	"os"
 	"sort"
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/cosmos/gogoproto/proto"
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	"google.golang.org/grpc/codes"
-	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
@@ -329,13 +330,38 @@ func (app *BaseApp) ProcessProposal(req abci.RequestProcessProposal) (resp abci.
 	return resp
 }
 
+type TxCtx struct {
+	mode       runTxMode
+	ctx        sdk.Context
+	tx         sdk.Tx
+	anteEvents sdk.Events
+	gInfo      sdk.GasInfo
+	priority   int64
+	result     *sdk.Result
+	err        error
+}
+
 // CheckTx implements the ABCI interface and executes a tx in CheckTx mode. In
 // CheckTx mode, messages are not executed. This means messages are only validated
 // and only the AnteHandler is executed. State is persisted to the BaseApp's
 // internal CheckTx state if the AnteHandler passes. Otherwise, the ResponseCheckTx
 // will contain relevant error information. Regardless of tx execution outcome,
 // the ResponseCheckTx will contain relevant gas execution context.
-func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
+func (app *BaseApp) CheckTx(req abci.RequestCheckTx, txCtxPtr interface{}) {
+	txCtx := txCtxPtr.(*TxCtx)
+	if txCtx.err != nil {
+		return
+	}
+	txCtx.err = app.runTxUnderLock(txCtx)
+}
+
+// CheckTx implements the ABCI interface and executes a tx in CheckTx mode. In
+// CheckTx mode, messages are not executed. This means messages are only validated
+// and only the AnteHandler is executed. State is persisted to the BaseApp's
+// internal CheckTx state if the AnteHandler passes. Otherwise, the ResponseCheckTx
+// will contain relevant error information. Regardless of tx execution outcome,
+// the ResponseCheckTx will contain relevant gas execution context.
+func (app *BaseApp) PreCheckTx(req abci.RequestCheckTx) (interface{}, *abci.ResponseCheckTx) {
 	var mode runTxMode
 
 	switch {
@@ -349,7 +375,22 @@ func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 		panic(fmt.Sprintf("unknown RequestCheckTx type: %s", req.Type))
 	}
 
-	gInfo, result, anteEvents, priority, err := app.runTx(mode, req.Tx)
+	preCtx := TxCtx{}
+	err := app.runPreTx(&preCtx, mode, req.Tx)
+	if err != nil {
+		res := sdkerrors.ResponseCheckTxWithEvents(err, preCtx.gInfo.GasWanted, preCtx.gInfo.GasUsed, preCtx.anteEvents.ToABCIEvents(), app.trace)
+		return nil, &res
+	}
+	return &preCtx, nil
+}
+
+func (app *BaseApp) PostCheckTx(req abci.RequestCheckTx, txCtxPtr interface{}) abci.ResponseCheckTx {
+	txCtx := txCtxPtr.(*TxCtx)
+	if txCtx.err != nil {
+		return sdkerrors.ResponseCheckTxWithEvents(txCtx.err, txCtx.gInfo.GasWanted, txCtx.gInfo.GasUsed, txCtx.anteEvents.ToABCIEvents(), app.trace)
+	}
+	gInfo, result, anteEvents, priority, err := app.runPostTx(txCtx)
+
 	if err != nil {
 		return sdkerrors.ResponseCheckTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace)
 	}

@@ -180,6 +180,22 @@ func (app *BaseApp) SetAnteHandler(ah sdk.AnteHandler) {
 	app.anteHandler = ah
 }
 
+func (app *BaseApp) SetParallelAnteHandler(ah sdk.AnteHandler) {
+	if app.sealed {
+		panic("SetAnteHandler() on sealed BaseApp")
+	}
+
+	app.readOnlyAnteHandler = ah
+}
+
+func (app *BaseApp) SetReadWriteAnteHandler(ah sdk.AnteHandler) {
+	if app.sealed {
+		panic("SetAnteHandler() on sealed BaseApp")
+	}
+
+	app.readWriteAnteHandler = ah
+}
+
 func (app *BaseApp) SetPostHandler(ph sdk.PostHandler) {
 	if app.sealed {
 		panic("SetPostHandler() on sealed BaseApp")

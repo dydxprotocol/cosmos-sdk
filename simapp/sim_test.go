@@ -66,6 +66,8 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 }
 
 func TestFullAppSimulation(t *testing.T) {
+	simcli.FlagEnabledValue = true
+	simcli.FlagCommitValue = true
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = SimAppChainID
 
