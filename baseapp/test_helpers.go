@@ -16,7 +16,7 @@ func (app *BaseApp) SimCheck(txEncoder sdk.TxEncoder, tx sdk.Tx) (sdk.GasInfo, *
 	if err != nil {
 		return sdk.GasInfo{}, nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
 	}
-	gasInfo, result, _, _, err := app.runTx(runTxModeCheck, bz)
+	gasInfo, result, _, _, err := app.runCheckTxConcurrently(runTxModeCheck, bz)
 	return gasInfo, result, err
 }
 
