@@ -370,9 +370,6 @@ func (app *BaseApp) ProcessProposal(req abci.RequestProcessProposal) (resp abci.
 // will contain relevant error information. Regardless of tx execution outcome,
 // the ResponseCheckTx will contain relevant gas execution context.
 func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
-
 	var mode runTxMode
 
 	switch {
@@ -386,7 +383,7 @@ func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 		panic(fmt.Sprintf("unknown RequestCheckTx type: %s", req.Type))
 	}
 
-	gInfo, result, anteEvents, priority, err := app.runTx(mode, req.Tx)
+	gInfo, result, anteEvents, priority, err := app.runCheckTxConcurrently(mode, req.Tx)
 	if err != nil {
 		return sdkerrors.ResponseCheckTxWithEvents(err, gInfo.GasWanted, gInfo.GasUsed, anteEvents, app.trace)
 	}
