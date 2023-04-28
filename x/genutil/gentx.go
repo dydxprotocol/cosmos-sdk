@@ -84,7 +84,7 @@ func ValidateAccountInGenesis(
 	return nil
 }
 
-type deliverTxfn func(abci.RequestDeliverTx) abci.ResponseDeliverTx
+type deliverTxfn func(abci.RequestDeliverTx, bool) abci.ResponseDeliverTx
 
 // DeliverGenTxs iterates over all genesis txs, decodes each into a Tx and
 // invokes the provided deliverTxfn with the decoded Tx. It returns the result
@@ -105,7 +105,7 @@ func DeliverGenTxs(
 			return nil, fmt.Errorf("failed to encode GenTx '%s': %s", genTx, err)
 		}
 
-		res := deliverTx(abci.RequestDeliverTx{Tx: bz})
+		res := deliverTx(abci.RequestDeliverTx{Tx: bz}, false)
 		if !res.IsOK() {
 			return nil, fmt.Errorf("failed to execute DeliverTx for '%s': %s", genTx, res.Log)
 		}

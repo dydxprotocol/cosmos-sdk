@@ -136,8 +136,10 @@ func ProvideMemoryStoreKey(key depinject.ModuleKey, app *AppBuilder) *storetypes
 	return storeKey
 }
 
-func ProvideDeliverTx(appBuilder *AppBuilder) func(abci.RequestDeliverTx) abci.ResponseDeliverTx {
-	return func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
-		return appBuilder.app.BaseApp.DeliverTx(tx)
+// We modify this method explicitly to require an additional parameter so that any additional usages
+// will be audited to ensure that the usage of the function is already holding the baseapp mutex lock.
+func ProvideDeliverTx(appBuilder *AppBuilder) func(abci.RequestDeliverTx, bool) abci.ResponseDeliverTx {
+	return func(tx abci.RequestDeliverTx, needsLock bool) abci.ResponseDeliverTx {
+		return appBuilder.app.BaseApp.DeliverTxShouldLock(tx, needsLock)
 	}
 }

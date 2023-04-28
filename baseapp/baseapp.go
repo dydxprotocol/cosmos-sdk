@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -146,6 +147,9 @@ type BaseApp struct { //nolint: maligned
 	abciListeners []ABCIListener
 
 	chainID string
+
+	// Used to synchronize the application when using an unsynchronized ABCI++ client.
+	mtx sync.Mutex
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
