@@ -316,7 +316,7 @@ func startInProcess(ctx *Context, clientCtx client.Context, appCreator types.App
 			cfg,
 			pvm.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 			nodeKey,
-			proxy.NewLocalClientCreator(app),
+			proxy.NewUnsynchronizedLocalClientCreator(app),
 			genDocProvider,
 			node.DefaultDBProvider,
 			node.DefaultMetricsProvider(cfg.Instrumentation),

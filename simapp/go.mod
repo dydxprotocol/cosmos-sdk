@@ -173,3 +173,5 @@ replace (
 	// Downgraded to avoid bugs in following commits which caused simulations to fail.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
+
+replace github.com/cometbft/cometbft => github.com/dydxprotocol/cometbft v0.37.0-rc2.0.20230428180246-e9257fb29fbf

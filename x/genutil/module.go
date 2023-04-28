@@ -137,7 +137,7 @@ type GenutilInputs struct {
 
 	AccountKeeper types.AccountKeeper
 	StakingKeeper types.StakingKeeper
-	DeliverTx     func(abci.RequestDeliverTx) abci.ResponseDeliverTx
+	DeliverTx     func(abci.RequestDeliverTx, bool) abci.ResponseDeliverTx
 	Config        client.TxConfig
 }
 
