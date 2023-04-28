@@ -140,3 +140,5 @@ require (
 	pgregory.net/rapid v0.5.5 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/cometbft/cometbft => github.com/dydxprotocol/cometbft v0.37.0-rc2.0.20230428161329-350fc8805b0f
