@@ -182,7 +182,7 @@ jobs:
           name: "${{ github.sha }}-e2e-coverage"
         continue-on-error: true
       - name: sonarcloud
-        if: env.GIT_DIFF
+        if: env.GIT_DIFF && secrets.SONAR_TOKEN
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -273,7 +273,7 @@ jobs:
           cd simapp
           go test -mod=readonly -timeout 30m -tags='app_v1 norace ledger test_ledger_mock rocksdb_build' ./...
       - name: sonarcloud
-        if: env.GIT_DIFF
+        if: env.GIT_DIFF && secrets.SONAR_TOKEN
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
