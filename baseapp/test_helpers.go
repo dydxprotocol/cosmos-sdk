@@ -53,3 +53,7 @@ func (app *BaseApp) NewUncachedContext(isCheckTx bool, header tmproto.Header) sd
 func (app *BaseApp) GetContextForDeliverTx(txBytes []byte) sdk.Context {
 	return app.getContextForTx(runTxModeDeliver, txBytes)
 }
+
+func (app *BaseApp) GetContextForCheckTx(txBytes []byte) sdk.Context {
+	return app.getContextForTx(runTxModeCheck, txBytes)
+}
