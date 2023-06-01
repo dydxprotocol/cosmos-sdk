@@ -233,20 +233,16 @@ func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customCo
 			return nil, fmt.Errorf("error in config file: %w", err)
 		}
 
-		conf.RPC.PprofListenAddress = "localhost:6060"
-		conf.P2P.RecvRate = 5120000
-		conf.P2P.SendRate = 5120000
-
 		defaultCometCfg := tmcfg.DefaultConfig()
-		// Use the same logic from latest cosmos-sdk: only set the `timeout_commit` value
-		// if it has not been overridden by the user. This allows the application to
-		// pass in a custom `timeout_commit` value.
-		// Source: https://github.com/cosmos/cosmos-sdk/blob/a827f42ae34ded4daa4b523b615b493e1b0b180d/server/util.go#L253-L255
+		// The SDK is opinionated about those comet values, so we set them here.
+		// We verify first that the user has not changed them for not overriding them.
 		if conf.Consensus.TimeoutCommit == defaultCometCfg.Consensus.TimeoutCommit {
 			conf.Consensus.TimeoutCommit = 5 * time.Second
 		}
+		if conf.RPC.PprofListenAddress == defaultCometCfg.RPC.PprofListenAddress {
+			conf.RPC.PprofListenAddress = "localhost:6060"
+		}
 		tmcfg.WriteConfigFile(tmCfgFile, conf)
-
 	case err != nil:
 		return nil, err
 
