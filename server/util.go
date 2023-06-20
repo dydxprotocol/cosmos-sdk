@@ -224,8 +224,10 @@ func interceptConfigs(rootViper *viper.Viper, customAppTemplate string, customCo
 		conf.P2P.SendRate = 5120000
 
 		defaultCometCfg := tmcfg.DefaultConfig()
-		// The SDK is opinionated about those comet values, so we set them here.
-		// We verify first that the user has not changed them for not overriding them.
+		// Use the same logic from latest cosmos-sdk: only set the `timeout_commit` value
+		// if it has not been overriden by the user. This allows the application to
+		// pass in a custom `timeout_commit` value.
+		// Source: https://github.com/cosmos/cosmos-sdk/blob/a827f42ae34ded4daa4b523b615b493e1b0b180d/server/util.go#L253-L255
 		if conf.Consensus.TimeoutCommit == defaultCometCfg.Consensus.TimeoutCommit {
 			conf.Consensus.TimeoutCommit = 5 * time.Second
 		}
