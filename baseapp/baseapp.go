@@ -621,7 +621,9 @@ func (app *BaseApp) runCheckTxConcurrently(mode runTxMode, txBytes []byte) (gInf
 		panic("runCheckTxConcurrently can only be invoked for CheckTx and RecheckTx.")
 	}
 
-	// Strip out the post handler
+	// We don't support the post handler specifically to avoid creating a branched MultiStore and since dYdX
+	// doesn't need support for it. Once support is necessary or when we are trying to upstream these changes
+	// we can guard creation of the MultiStore to only occur when the post handler is specified.
 	if app.postHandler != nil {
 		panic("CheckTx/RecheckTx does not support a post hander.")
 	}
@@ -729,17 +731,13 @@ func (app *BaseApp) runCheckTxConcurrently(mode runTxMode, txBytes []byte) (gInf
 		return gInfo, result, anteEvents, priority, sdkerrors.Wrap(err, "failed to marshal tx data")
 	}
 
-	msgLogs := make(sdk.ABCIMessageLogs, 0, len(msgs))
 	result = &sdk.Result{
-		Data:         data,
-		Log:          strings.TrimSpace(msgLogs.String()),
+		Data: data,
+		// Use an empty logs slice and format it to maintain forward compatibility with changes done by the Cosmos SDK.
+		Log:          strings.TrimSpace(sdk.ABCIMessageLogs{}.String()),
 		Events:       sdk.EmptyEvents().ToABCIEvents(),
 		MsgResponses: msgResponses,
 	}
-
-	// We don't support the post handler specifically to avoid creating a branched MultiStore and since dYdX
-	// doesn't need support for it. Once support is necessary or when we are trying to upstream these changes
-	// we can guard creation of the MultiStore to only occur when the post handler is specified.
 
 	return gInfo, result, anteEvents, priority, err
 }
