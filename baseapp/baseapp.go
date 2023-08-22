@@ -735,6 +735,7 @@ func (app *BaseApp) runCheckTxConcurrently(mode runTxMode, txBytes []byte) (gInf
 		Data: data,
 		// Use an empty logs slice and format it to maintain forward compatibility with changes done by the Cosmos SDK.
 		Log:          strings.TrimSpace(sdk.ABCIMessageLogs{}.String()),
+                // Use an empty events slice to maintain forward compatibility with changed done by the Cosmos SDK.
 		Events:       sdk.EmptyEvents().ToABCIEvents(),
 		MsgResponses: msgResponses,
 	}
