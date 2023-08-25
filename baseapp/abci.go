@@ -35,6 +35,9 @@ const (
 // InitChain implements the ABCI interface. It runs the initialization logic
 // directly on the CommitMultiStore.
 func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitChain) {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	if req.ChainId != app.chainID {
 		panic(fmt.Sprintf("invalid chain-id on InitChain; expected: %s, got: %s", app.chainID, req.ChainId))
 	}
@@ -121,6 +124,9 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 
 // Info implements the ABCI interface.
 func (app *BaseApp) Info(req abci.RequestInfo) abci.ResponseInfo {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	lastCommitID := app.cms.LastCommitID()
 
 	return abci.ResponseInfo{
@@ -152,6 +158,9 @@ func (app *BaseApp) FilterPeerByID(info string) abci.ResponseQuery {
 
 // BeginBlock implements the ABCI application interface.
 func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeginBlock) {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	if req.Header.ChainID != app.chainID {
 		panic(fmt.Sprintf("invalid chain-id on BeginBlock; expected: %s, got: %s", app.chainID, req.Header.ChainID))
 	}
@@ -211,6 +220,9 @@ func (app *BaseApp) BeginBlock(req abci.RequestBeginBlock) (res abci.ResponseBeg
 
 // EndBlock implements the ABCI interface.
 func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBlock) {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	if app.deliverState.ms.TracingEnabled() {
 		app.deliverState.ms = app.deliverState.ms.SetTracingContext(nil).(sdk.CacheMultiStore)
 	}
@@ -248,6 +260,9 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 // Ref: https://github.com/cosmos/cosmos-sdk/blob/main/docs/architecture/adr-060-abci-1.0.md
 // Ref: https://github.com/tendermint/tendermint/blob/main/spec/abci/abci%2B%2B_basic_concepts.md
 func (app *BaseApp) PrepareProposal(req abci.RequestPrepareProposal) (resp abci.ResponsePrepareProposal) {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	if app.prepareProposal == nil {
 		panic("PrepareProposal method not set")
 	}
@@ -305,6 +320,9 @@ func (app *BaseApp) PrepareProposal(req abci.RequestPrepareProposal) (resp abci.
 // Ref: https://github.com/cosmos/cosmos-sdk/blob/main/docs/architecture/adr-060-abci-1.0.md
 // Ref: https://github.com/tendermint/tendermint/blob/main/spec/abci/abci%2B%2B_basic_concepts.md
 func (app *BaseApp) ProcessProposal(req abci.RequestProcessProposal) (resp abci.ResponseProcessProposal) {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	if app.processProposal == nil {
 		panic("app.ProcessProposal is not set")
 	}
@@ -354,6 +372,9 @@ func (app *BaseApp) ProcessProposal(req abci.RequestProcessProposal) (resp abci.
 // will contain relevant error information. Regardless of tx execution outcome,
 // the ResponseCheckTx will contain relevant gas execution context.
 func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	var mode runTxMode
 
 	switch {
@@ -388,6 +409,18 @@ func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 // Regardless of tx execution outcome, the ResponseDeliverTx will contain relevant
 // gas execution context.
 func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliverTx) {
+	return app.DeliverTxShouldLock(req, true)
+}
+
+// DeliverTxShouldLock enables control of whether the lock should be acquired. The golang mutex
+// is not reentrant so we enable conditional locking to prevent deadlock since cosmos-sdk/x/genutil.InitGenesis
+// invokes DeliverTx from the ABCI++ InitGenesis method which already holds the lock.
+func (app *BaseApp) DeliverTxShouldLock(req abci.RequestDeliverTx, needsLock bool) (res abci.ResponseDeliverTx) {
+	if needsLock {
+		app.mtx.Lock()
+		defer app.mtx.Unlock()
+	}
+
 	gInfo := sdk.GasInfo{}
 	resultStr := "successful"
 
@@ -429,6 +462,9 @@ func (app *BaseApp) DeliverTx(req abci.RequestDeliverTx) (res abci.ResponseDeliv
 // against that height and gracefully halt if it matches the latest committed
 // height.
 func (app *BaseApp) Commit() abci.ResponseCommit {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	header := app.deliverState.ctx.BlockHeader()
 	retainHeight := app.GetBlockRetentionHeight(header.Height)
 
@@ -518,6 +554,9 @@ func (app *BaseApp) halt() {
 // Query implements the ABCI interface. It delegates to CommitMultiStore if it
 // implements Queryable.
 func (app *BaseApp) Query(req abci.RequestQuery) (res abci.ResponseQuery) {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	// Add panic recovery for all queries.
 	// ref: https://github.com/cosmos/cosmos-sdk/pull/8039
 	defer func() {
@@ -567,6 +606,9 @@ func (app *BaseApp) Query(req abci.RequestQuery) (res abci.ResponseQuery) {
 
 // ListSnapshots implements the ABCI interface. It delegates to app.snapshotManager if set.
 func (app *BaseApp) ListSnapshots(req abci.RequestListSnapshots) abci.ResponseListSnapshots {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	resp := abci.ResponseListSnapshots{Snapshots: []*abci.Snapshot{}}
 	if app.snapshotManager == nil {
 		return resp
@@ -592,6 +634,9 @@ func (app *BaseApp) ListSnapshots(req abci.RequestListSnapshots) abci.ResponseLi
 
 // LoadSnapshotChunk implements the ABCI interface. It delegates to app.snapshotManager if set.
 func (app *BaseApp) LoadSnapshotChunk(req abci.RequestLoadSnapshotChunk) abci.ResponseLoadSnapshotChunk {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	if app.snapshotManager == nil {
 		return abci.ResponseLoadSnapshotChunk{}
 	}
@@ -611,6 +656,9 @@ func (app *BaseApp) LoadSnapshotChunk(req abci.RequestLoadSnapshotChunk) abci.Re
 
 // OfferSnapshot implements the ABCI interface. It delegates to app.snapshotManager if set.
 func (app *BaseApp) OfferSnapshot(req abci.RequestOfferSnapshot) abci.ResponseOfferSnapshot {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	if app.snapshotManager == nil {
 		app.logger.Error("snapshot manager not configured")
 		return abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ABORT}
@@ -660,6 +708,9 @@ func (app *BaseApp) OfferSnapshot(req abci.RequestOfferSnapshot) abci.ResponseOf
 
 // ApplySnapshotChunk implements the ABCI interface. It delegates to app.snapshotManager if set.
 func (app *BaseApp) ApplySnapshotChunk(req abci.RequestApplySnapshotChunk) abci.ResponseApplySnapshotChunk {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
 	if app.snapshotManager == nil {
 		app.logger.Error("snapshot manager not configured")
 		return abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ABORT}
