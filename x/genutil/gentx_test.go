@@ -247,7 +247,7 @@ func (suite *GenTxTestSuite) TestDeliverGenTxs() {
 	testCases := []struct {
 		msg         string
 		malleate    func()
-		deliverTxFn func(abci.RequestDeliverTx) abci.ResponseDeliverTx
+		deliverTxFn func(abci.RequestDeliverTx, bool) abci.ResponseDeliverTx
 		expPass     bool
 	}{
 		{
@@ -261,7 +261,7 @@ func (suite *GenTxTestSuite) TestDeliverGenTxs() {
 				suite.Require().NoError(err)
 				genTxs[0] = tx
 			},
-			func(_ abci.RequestDeliverTx) abci.ResponseDeliverTx {
+			func(_ abci.RequestDeliverTx, _ bool) abci.ResponseDeliverTx {
 				return abci.ResponseDeliverTx{
 					Code:      sdkerrors.ErrNoSignatures.ABCICode(),
 					GasWanted: int64(10000000),
@@ -294,7 +294,7 @@ func (suite *GenTxTestSuite) TestDeliverGenTxs() {
 				suite.Require().NoError(err)
 				genTxs[0] = genTx
 			},
-			func(tx abci.RequestDeliverTx) abci.ResponseDeliverTx {
+			func(tx abci.RequestDeliverTx, _ bool) abci.ResponseDeliverTx {
 				return abci.ResponseDeliverTx{
 					Code:      sdkerrors.ErrUnauthorized.ABCICode(),
 					GasWanted: int64(10000000),
