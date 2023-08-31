@@ -205,3 +205,5 @@ replace (
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.1
 )
+
+replace github.com/cometbft/cometbft => github.com/dydxprotocol/cometbft v0.38.0-rc3.0.20230831214749-65a7cee150c1
