@@ -57,7 +57,7 @@ func startInProcess(cfg Config, val *Validator) error {
 		cmtCfg,
 		pvm.LoadOrGenFilePV(cmtCfg.PrivValidatorKeyFile(), cmtCfg.PrivValidatorStateFile()),
 		nodeKey,
-		proxy.NewLocalClientCreator(cmtApp),
+		proxy.NewUnsynchronizedLocalClientCreator(cmtApp),
 		appGenesisProvider,
 		cmtcfg.DefaultDBProvider,
 		node.DefaultMetricsProvider(cmtCfg.Instrumentation),
