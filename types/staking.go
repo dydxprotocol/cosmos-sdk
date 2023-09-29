@@ -17,7 +17,9 @@ var (
 	DefaultBondDenom = "stake"
 
 	// DefaultPowerReduction is the default amount of staking tokens required for 1 unit of consensus-engine power
-	DefaultPowerReduction = NewIntFromUint64(1000000)
+	// Assuming the stake token on dYdX Chain is 1e-18 of a full coin, the DefaultPowerReduction
+	// needs to be 1e18 to prevent overflow when converting from staked token amount to consensus power.
+	DefaultPowerReduction = NewIntFromUint64(1_000_000_000_000_000_000)
 )
 
 // TokensToConsensusPower - convert input tokens to potential consensus-engine power
