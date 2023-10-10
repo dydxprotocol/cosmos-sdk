@@ -202,7 +202,7 @@ func (st *Store) Set(key, value []byte) {
 
 // Implements types.KVStore.
 func (st *Store) Get(key []byte) []byte {
-	defer telemetry.MeasureSince(time.Now(), "store", "iavl", "get")
+	defer telemetry.MeasureSinceWithSampling(time.Now(), 0.01, "store", "iavl", "get")
 	value, err := st.tree.Get(key)
 	if err != nil {
 		panic(err)
