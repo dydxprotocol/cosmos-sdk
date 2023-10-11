@@ -98,7 +98,7 @@ func New(cfg Config) (_ *Metrics, rerr error) {
 	}()
 
 	m := &Metrics{memSink: memSink}
-	fanout := metrics.FanoutSink{}
+	var sink metrics.MetricSink
 
 	if cfg.PrometheusRetentionTime > 0 {
 		m.prometheusEnabled = true
@@ -111,12 +111,12 @@ func New(cfg Config) (_ *Metrics, rerr error) {
 			return nil, err
 		}
 
-		fanout = append(fanout, promSink)
+		sink = promSink
 	} else {
-		fanout = append(fanout, memSink)
+		sink = memSink
 	}
 
-	if _, err := metrics.NewGlobal(metricsConf, fanout); err != nil {
+	if _, err := metrics.NewGlobal(metricsConf, sink); err != nil {
 		return nil, err
 	}
 
