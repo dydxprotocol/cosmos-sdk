@@ -2,7 +2,9 @@ package grpc
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -23,16 +25,30 @@ func StartGRPCWeb(grpcSrv *grpc.Server, config config.Config) (*http.Server, err
 		)
 	}
 
+	var proto, addr string
+	parts := strings.SplitN(config.GRPCWeb.Address, "://", 2)
+	// Default to using 'tcp' to maintain backwards compatibility with configurations that don't specify
+	// the network to use.
+	if len(parts) != 2 {
+		proto = "tcp"
+		addr = config.GRPCWeb.Address
+	} else {
+		proto, addr = parts[0], parts[1]
+	}
+	listener, err := net.Listen(proto, addr)
+	if err != nil {
+		return nil, err
+	}
+
 	wrappedServer := grpcweb.WrapServer(grpcSrv, options...)
 	grpcWebSrv := &http.Server{
-		Addr:              config.GRPCWeb.Address,
 		Handler:           wrappedServer,
 		ReadHeaderTimeout: 500 * time.Millisecond,
 	}
 
 	errCh := make(chan error)
 	go func() {
-		if err := grpcWebSrv.ListenAndServe(); err != nil {
+		if err := grpcWebSrv.Serve(listener); err != nil {
 			errCh <- fmt.Errorf("[grpc] failed to serve: %w", err)
 		}
 	}()
@@ -40,7 +56,7 @@ func StartGRPCWeb(grpcSrv *grpc.Server, config config.Config) (*http.Server, err
 	select {
 	case err := <-errCh:
 		return nil, err
-	case <-time.After(types.ServerStartTime): // assume server started successfully
+	case <-time.After(time.Duration(types.ServerStartTime.Load())): // assume server started successfully
 		return grpcWebSrv, nil
 	}
 }
