@@ -3,6 +3,7 @@ package grpc
 import (
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -18,7 +19,7 @@ import (
 )
 
 // StartGRPCServer starts a gRPC server on the given address.
-func StartGRPCServer(clientCtx client.Context, app types.Application, cfg config.GRPCConfig) (*grpc.Server, error) {
+func StartGRPCServer(clientCtx client.Context, app types.Application, cfg config.GRPCConfig) (*grpc.Server, net.Addr, error) {
 	maxSendMsgSize := cfg.MaxSendMsgSize
 	if maxSendMsgSize == 0 {
 		maxSendMsgSize = config.DefaultGRPCMaxSendMsgSize
@@ -53,16 +54,26 @@ func StartGRPCServer(clientCtx client.Context, app types.Application, cfg config
 		InterfaceRegistry: clientCtx.InterfaceRegistry,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Reflection allows external clients to see what services and methods
 	// the gRPC server exposes.
 	gogoreflection.Register(grpcSrv)
 
-	listener, err := net.Listen("tcp", cfg.Address)
+	var proto, addr string
+	parts := strings.SplitN(cfg.Address, "://", 2)
+	// Default to using 'tcp' to maintain backwards compatibility with configurations that don't specify
+	// the network to use.
+	if len(parts) != 2 {
+		proto = "tcp"
+		addr = cfg.Address
+	} else {
+		proto, addr = parts[0], parts[1]
+	}
+	listener, err := net.Listen(proto, addr)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	errCh := make(chan error)
@@ -75,10 +86,10 @@ func StartGRPCServer(clientCtx client.Context, app types.Application, cfg config
 
 	select {
 	case err := <-errCh:
-		return nil, err
+		return nil, nil, err
 
-	case <-time.After(types.ServerStartTime):
+	case <-time.After(time.Duration(types.ServerStartTime.Load())):
 		// assume server started successfully
-		return grpcSrv, nil
+		return grpcSrv, listener.Addr(), nil
 	}
 }

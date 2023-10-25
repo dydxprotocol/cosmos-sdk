@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -381,11 +382,15 @@ func TrapSignal(cleanupFunc func()) {
 }
 
 // WaitForQuitSignals waits for SIGINT and SIGTERM and returns.
-func WaitForQuitSignals() ErrorCode {
+func WaitForQuitSignals(ctx context.Context) error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-sigs
-	return ErrorCode{Code: int(sig.(syscall.Signal)) + 128}
+	select {
+	case sig := <-sigs:
+		return ErrorCode{Code: int(sig.(syscall.Signal)) + 128}
+	case <-ctx.Done():
+		return nil
+	}
 }
 
 // GetAppDBBackend gets the backend type to use for the application DBs.
