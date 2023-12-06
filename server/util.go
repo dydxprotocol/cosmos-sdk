@@ -18,6 +18,7 @@ import (
 	cmtcfg "github.com/cometbft/cometbft/config"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/pkgerrors"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -25,10 +26,19 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"cosmossdk.io/log"
+<<<<<<< HEAD
 	"cosmossdk.io/store"
 	"cosmossdk.io/store/snapshots"
 	snapshottypes "cosmossdk.io/store/snapshots/types"
 	storetypes "cosmossdk.io/store/types"
+=======
+	dbm "github.com/cometbft/cometbft-db"
+	tmcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
+	tmcfg "github.com/cometbft/cometbft/config"
+	tmlog "github.com/cometbft/cometbft/libs/log"
+	tmtypes "github.com/cometbft/cometbft/types"
+	errorspkg "github.com/pkg/errors"
+>>>>>>> ecbbc8a84 (error key value formatter for zerolog for dd error tracking)
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -110,7 +120,7 @@ func InterceptConfigsPreRunHandler(cmd *cobra.Command, customAppConfigTemplate s
 	if err != nil {
 		return err
 	}
-	serverCtx.Logger = logger.With(log.ModuleKey, "server")
+	serverCtx.Logger = logger.With(log.ModuleKey, "server").With("source", "go")
 
 	// set server context
 	return SetCmdServerContext(cmd, serverCtx)
@@ -197,7 +207,37 @@ func CreateSDKLogger(ctx *Context, out io.Writer) (log.Logger, error) {
 	// Check if the CometBFT flag for trace logging is set and enable stack traces if so.
 	opts = append(opts, log.TraceOption(ctx.Viper.GetBool("trace"))) // cmtcli.TraceFlag
 
+	// Error fields should be set under error object
+	zerolog.ErrorFieldName = "error"
+
+	// Add the kind and message field
+	zerolog.ErrorMarshalFunc = func(err error) interface{} {
+		stackArr, ok := pkgerrors.MarshalStack(errorspkg.WithStack(err)).([]map[string]string)
+		if !ok {
+			return struct{}{}
+		}
+		objectToReturn := DatadogErrorTrackingObject{
+			// Discard common prefix stack traces from zerolog call sites
+			Stack:   stackArr[5:],
+			Kind:    "Exception",
+			Message: err.Error(),
+		}
+		return objectToReturn
+	}
+
 	return log.NewLogger(out, opts...), nil
+}
+
+type DatadogErrorTrackingObject struct {
+	Stack   []map[string]string
+	Message string
+	Kind    string
+}
+
+func (obj DatadogErrorTrackingObject) MarshalZerologObject(e *zerolog.Event) {
+	e.Interface("stack", obj.Stack).
+		Str("message", obj.Message).
+		Str("kind", obj.Kind)
 }
 
 // GetServerContextFromCmd returns a Context from a command or an empty Context
