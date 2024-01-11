@@ -43,7 +43,7 @@ func TestMigrateStore(t *testing.T) {
 	bz = store.Get(v4.ParamsKey)
 	require.NoError(t, cdc.Unmarshal(bz, &params))
 	require.NotNil(t, params)
-	// Expect ExpeditedMinDeposit to equal previous MinDeposit after migraiton.
+	// After migration, expect `ExpeditedMinDeposit` to equal previous value of `MinDeposit`.
 	require.Equal(t, params.MinDeposit, params.ExpeditedMinDeposit)
 	require.Equal(t, v1.DefaultParams().ExpeditedThreshold, params.ExpeditedThreshold)
 	require.Equal(t, v1.DefaultParams().ExpeditedVotingPeriod, params.ExpeditedVotingPeriod)
