@@ -401,7 +401,16 @@ func startInProcess(parentCtx context.Context, ctx *Context, clientCtx client.Co
 				maxRecvMsgSize = serverconfig.DefaultGRPCMaxRecvMsgSize
 			}
 
-			grpcSrvAddrString := fmt.Sprintf("%s://%s", grpcSrvAddr.Network(), grpcSrvAddr.String())
+			var grpcSrvAddrString string
+			if grpcSrvAddr.Network() == "tcp" {
+				_, port, err := net.SplitHostPort(grpcSrvAddr.String())
+				if err != nil {
+					return err
+				}
+				grpcSrvAddrString = fmt.Sprintf("127.0.0.1:%s", port)
+			} else {
+				grpcSrvAddrString = fmt.Sprintf("%s://%s", grpcSrvAddr.Network(), grpcSrvAddr.String())
+			}
 			// If grpc is enabled, configure grpc client for grpc gateway.
 			grpcClient, err := grpc.Dial(
 				grpcSrvAddrString,
