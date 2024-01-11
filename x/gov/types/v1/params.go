@@ -29,9 +29,9 @@ var (
 	DefaultVetoThreshold          = sdkmath.LegacyNewDecWithPrec(334, 3)
 	DefaultMinInitialDepositRatio = sdkmath.LegacyZeroDec()
 	// (New default value for v0.50 migration) 100% of deposit will not be returned to the depositors,
-	// if the proposal is cancelled. Also, `MsgCancelProposal` is disabled in application.
+	// if the proposal is canceled. Also, `MsgCancelProposal` is disabled in application.
 	DefaultProposalCancelRatio = sdkmath.LegacyMustNewDecFromStr("1.0")
-	// (New default value for v0.50 migration) 100% of deposit is burned if the proposal is cancelled.
+	// (New default value for v0.50 migration) 100% of deposit is burned if the proposal is canceled.
 	// Also, `MsgCancelProposal` is disabled in application.
 	DefaultProposalCancelDestAddress = ""
 	DefaultBurnProposalPrevote       = false // set to false to replicate behavior of when this change was made (0.47)
