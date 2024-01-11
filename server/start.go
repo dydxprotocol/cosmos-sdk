@@ -403,12 +403,14 @@ func startInProcess(parentCtx context.Context, ctx *Context, clientCtx client.Co
 
 			var grpcSrvAddrString string
 			if grpcSrvAddr.Network() == "tcp" {
+				// Use original cosmos behavior for tcp.
 				_, port, err := net.SplitHostPort(grpcSrvAddr.String())
 				if err != nil {
 					return err
 				}
 				grpcSrvAddrString = fmt.Sprintf("127.0.0.1:%s", port)
 			} else {
+				// This can support UDS at the very least. See https://github.com/grpc/grpc/blob/master/doc/naming.md for details.
 				grpcSrvAddrString = fmt.Sprintf("%s://%s", grpcSrvAddr.Network(), grpcSrvAddr.String())
 			}
 			// If grpc is enabled, configure grpc client for grpc gateway.
