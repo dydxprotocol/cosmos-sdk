@@ -35,6 +35,7 @@ func MigrateStore(ctx sdk.Context, storeService corestoretypes.KVStoreService, c
 		return err
 	}
 
+	// defaultParams is updated with default values for new parameters introduced in v0.50.
 	defaultParams := govv1.DefaultParams()
 	params.ExpeditedMinDeposit = params.MinDeposit // Use regular `min_deposit` as `expedited_min_deposit`
 	params.ExpeditedVotingPeriod = defaultParams.ExpeditedVotingPeriod

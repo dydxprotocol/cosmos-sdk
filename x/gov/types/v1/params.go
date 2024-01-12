@@ -37,7 +37,8 @@ var (
 	DefaultBurnProposalPrevote       = false // set to false to replicate behavior of when this change was made (0.47)
 	DefaultBurnVoteQuorom            = false // set to false to  replicate behavior of when this change was made (0.47)
 	DefaultBurnVoteVeto              = true  // set to true to replicate behavior of when this change was made (0.47)
-	DefaultMinDepositRatio           = sdkmath.LegacyMustNewDecFromStr("0.01")
+	// (New default value for v0.50 migration) 1% of `min_deposit` is required to make a deposit.
+	DefaultMinDepositRatio = sdkmath.LegacyMustNewDecFromStr("0.01")
 )
 
 // Deprecated: NewDepositParams creates a new DepositParams object
