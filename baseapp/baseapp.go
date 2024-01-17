@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/cockroachdb/errors"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -185,6 +186,9 @@ type BaseApp struct {
 	// including the goroutine handling.This is experimental and must be enabled
 	// by developers.
 	optimisticExec *oe.OptimisticExecution
+
+	// Used to synchronize the application when using an unsynchronized ABCI++ client.
+	mtx sync.Mutex
 }
 
 // NewBaseApp returns a reference to an initialized BaseApp. It accepts a
