@@ -197,12 +197,14 @@ func NewBaseAppSuiteWithSnapshots(t *testing.T, cfg SnapshotsConfig, opts ...fun
 func TestAnteHandlerGasMeter(t *testing.T) {
 	// run BeginBlock and assert that the gas meter passed into the first Txn is zeroed out
 	anteOpt := func(bapp *baseapp.BaseApp) {
-		bapp.SetAnteHandler(func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
-			gasMeter := ctx.BlockGasMeter()
-			require.NotNil(t, gasMeter)
-			require.Equal(t, storetypes.Gas(0), gasMeter.GasConsumed())
-			return ctx, nil
-		})
+		bapp.SetAnteHandler(wrapWithLockAndCacheContextDecorator(
+			func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
+				gasMeter := ctx.BlockGasMeter()
+				require.NotNil(t, gasMeter)
+				require.Equal(t, storetypes.Gas(0), gasMeter.GasConsumed())
+				return ctx, nil
+			}),
+		)
 	}
 	// set the beginBlocker to use some gas
 	beginBlockerOpt := func(bapp *baseapp.BaseApp) {
@@ -516,9 +518,11 @@ func TestCustomRunTxPanicHandler(t *testing.T) {
 	customPanicMsg := "test panic"
 	anteErr := errorsmod.Register("fakeModule", 100500, "fakeError")
 	anteOpt := func(bapp *baseapp.BaseApp) {
-		bapp.SetAnteHandler(func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
-			panic(errorsmod.Wrap(anteErr, "anteHandler"))
-		})
+		bapp.SetAnteHandler(wrapWithLockAndCacheContextDecorator(
+			func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
+				panic(errorsmod.Wrap(anteErr, "anteHandler"))
+			}),
+		)
 	}
 
 	suite := NewBaseAppSuite(t, anteOpt)
