@@ -155,9 +155,6 @@ func (app *BaseApp) Info(_ *abci.RequestInfo) (*abci.ResponseInfo, error) {
 // Query implements the ABCI interface. It delegates to CommitMultiStore if it
 // implements Queryable.
 func (app *BaseApp) Query(_ context.Context, req *abci.RequestQuery) (resp *abci.ResponseQuery, err error) {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
-
 	// add panic recovery for all queries
 	//
 	// Ref: https://github.com/cosmos/cosmos-sdk/pull/8039
@@ -169,7 +166,12 @@ func (app *BaseApp) Query(_ context.Context, req *abci.RequestQuery) (resp *abci
 
 	// when a client did not provide a query height, manually inject the latest
 	if req.Height == 0 {
+		// Grab a lock to get the latest block height from the multi store.
+		// The value only changes during FinalizeBlock/Commit which holds
+		// `mtx` exclusively.
+		app.mtx.RLock()
 		req.Height = app.LastBlockHeight()
+		app.mtx.RUnlock()
 	}
 
 	telemetry.IncrCounter(1, "query", "count")
@@ -1024,11 +1026,7 @@ func handleQueryApp(app *BaseApp, path []string, req *abci.RequestQuery) *abci.R
 		case "simulate":
 			txBytes := req.Data
 
-			// Simulate enters runTx which requires us to give up the lock now.
-			app.mtx.Unlock()
 			gInfo, res, err := app.Simulate(txBytes)
-			app.mtx.Lock()
-
 			if err != nil {
 				return sdkerrors.QueryResult(errorsmod.Wrap(err, "failed to simulate tx"), app.trace)
 			}
@@ -1176,11 +1174,7 @@ func (app *BaseApp) handleQueryGRPC(handler GRPCQueryHandler, req *abci.RequestQ
 		return sdkerrors.QueryResult(err, app.trace)
 	}
 
-	// handler recursively can re-enter Query which requires us to give up the lock now.
-	app.mtx.Unlock()
 	resp, err := handler(ctx, req)
-	app.mtx.Lock()
-
 	if err != nil {
 		resp = sdkerrors.QueryResult(gRPCErrorToSDKError(err), app.trace)
 		resp.Height = req.Height
@@ -1235,7 +1229,13 @@ func (app *BaseApp) CreateQueryContext(height int64, prove bool) (sdk.Context, e
 		qms = app.cms.(storetypes.MultiStore)
 	}
 
+	// Acquire a read lock to be able to get the latest version and checkState
+	// header. These values only change during FinalizeBlock/Commit which holds
+	// `mtx` exclusively.
+	app.mtx.RLock()
 	lastBlockHeight := qms.LatestVersion()
+	header := app.checkState.Context().BlockHeader()
+	app.mtx.RUnlock()
 	if lastBlockHeight == 0 {
 		return sdk.Context{}, errorsmod.Wrapf(sdkerrors.ErrInvalidHeight, "%s is not ready; please wait for first block", app.Name())
 	}
@@ -1271,7 +1271,6 @@ func (app *BaseApp) CreateQueryContext(height int64, prove bool) (sdk.Context, e
 	}
 
 	// branch the commit multi-store for safety
-	header := app.checkState.Context().BlockHeader()
 	ctx := sdk.NewContext(cacheMS, header, true, app.logger).
 		WithMinGasPrices(app.minGasPrices).
 		WithBlockHeight(height).
