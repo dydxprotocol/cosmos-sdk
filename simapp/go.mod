@@ -215,3 +215,5 @@ replace (
 )
 
 replace github.com/cometbft/cometbft => github.com/dydxprotocol/cometbft v0.38.3-0.20240220185844-e704122c8540
+
+replace cosmossdk.io/store => github.com/dydxprotocol/cosmos-sdk/store v1.0.3-0.20240226230141-2bbd3559a170
