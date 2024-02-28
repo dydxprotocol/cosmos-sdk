@@ -33,6 +33,20 @@ require (
 )
 
 require (
+	cosmossdk.io/x/auth v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/authz v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/bank v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/distribution v0.0.0-20240227221813-a248d05f70f4
+	cosmossdk.io/x/gov v0.0.0-20231113122742-912390d5fc4a
+	cosmossdk.io/x/group v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/mint v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/slashing v0.0.0-00010101000000-000000000000
+	cosmossdk.io/x/staking v0.0.0-00010101000000-000000000000
+)
+
+require (
+	buf.build/gen/go/cosmos/gogo-proto/protocolbuffers/go v1.32.0-20230509103710-5e5b9fdd0180.1 // indirect
+	buf.build/gen/go/tendermint/tendermint/protocolbuffers/go v1.32.0-20231117195010-33ed361a9051.1 // indirect
 	cloud.google.com/go v0.112.0 // indirect
 	cloud.google.com/go/compute v1.24.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -149,9 +163,9 @@ require (
 	github.com/petermattis/goid v0.0.0-20230904192822-1876fd5063bc // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.18.0 // indirect
+	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.47.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
