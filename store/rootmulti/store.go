@@ -479,7 +479,7 @@ func (rs *Store) Commit() types.CommitID {
 		rs.logger.Debug("commit header and version mismatch", "header_height", rs.commitHeader.Height, "version", version)
 	}
 
-	rs.lastCommitInfo = commitStores(version, rs.stores, rs.removalMap)
+	rs.lastCommitInfo = commitStores(logger, version, rs.stores, rs.removalMap)
 	rs.lastCommitInfo.Timestamp = rs.commitHeader.Time
 	defer rs.flushMetadata(rs.db, version, rs.lastCommitInfo)
 
@@ -1193,24 +1193,34 @@ func GetLatestVersion(db dbm.DB) int64 {
 }
 
 // Commits each store and returns a new commitInfo.
-func commitStores(version int64, storeMap map[types.StoreKey]types.CommitKVStore, removalMap map[types.StoreKey]bool) *types.CommitInfo {
+func commitStores(logger log.Logger, version int64, storeMap map[types.StoreKey]types.CommitKVStore, removalMap map[types.StoreKey]bool) *types.CommitInfo {
 	storeInfos := make([]types.StoreInfo, 0, len(storeMap))
 	storeKeys := keysFromStoreKeyMap(storeMap)
 
+	logger.Error(fmt.Sprintf("############## %d\n", version))
+
 	for _, key := range storeKeys {
 		store := storeMap[key]
+		logger.Error(fmt.Sprintf("############## %s\n", key.Name()))
 		last := store.LastCommitID()
+		logger.Error(fmt.Sprintf("############## last version %d\n", last.Version))
+		logger.Error(fmt.Sprintf("############## last hash %X\n", last.Hash))
 
 		// If a commit event execution is interrupted, a new iavl store's version
 		// will be larger than the RMS's metadata, when the block is replayed, we
 		// should avoid committing that iavl store again.
 		var commitID types.CommitID
 		if last.Version >= version {
+			logger.Error(fmt.Sprintf("############## went into first branch"))
 			last.Version = version
 			commitID = last
 		} else {
+			logger.Error(fmt.Sprintf("############## went into second branch"))
 			commitID = store.Commit()
 		}
+
+		logger.Error(fmt.Sprintf("############## new version %d\n", commitID.Version))
+		logger.Error(fmt.Sprintf("############## new hash %X\n", commitID.Hash))
 
 		storeType := store.GetStoreType()
 		if storeType == types.StoreTypeTransient || storeType == types.StoreTypeMemory {
