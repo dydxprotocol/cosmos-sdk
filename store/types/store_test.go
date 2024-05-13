@@ -81,9 +81,7 @@ func TestKVStoreKey(t *testing.T) {
 	key := NewKVStoreKey("test")
 	require.Equal(t, "test", key.name)
 	require.Equal(t, key.name, key.Name())
-	require.Equal(t, fmt.Sprintf("KVStoreKey{%p, test, locking: false}", key), key.String())
-	keyWithLocking := key.WithLocking()
-	require.Equal(t, fmt.Sprintf("KVStoreKey{%p, test, locking: true}", keyWithLocking), keyWithLocking.String())
+	require.Equal(t, fmt.Sprintf("KVStoreKey{%p, test}", key), key.String())
 }
 
 func TestNilKVStoreKey(t *testing.T) {
