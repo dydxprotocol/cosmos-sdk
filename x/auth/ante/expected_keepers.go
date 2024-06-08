@@ -17,6 +17,8 @@ type AccountKeeper interface {
 	SetAccount(ctx context.Context, acc sdk.AccountI)
 	GetModuleAddress(moduleName string) sdk.AccAddress
 	AddressCodec() address.Codec
+	GetAccountByNumber(ctx context.Context, number uint64) (sdk.AccAddress, error)
+	AddNonce(ctx context.Context, addr sdk.AccAddress, nonce uint64) error
 }
 
 // FeegrantKeeper defines the expected feegrant keeper.

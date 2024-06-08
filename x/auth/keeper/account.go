@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/collections"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // NewAccountWithAddress implements AccountKeeperI.
@@ -80,4 +81,46 @@ func (ak AccountKeeper) IterateAccounts(ctx context.Context, cb func(account sdk
 	if err != nil {
 		panic(err)
 	}
+}
+
+// GetAccountByNumber returns an account by its account number.
+func (ak AccountKeeper) GetAccountByNumber(ctx context.Context, number uint64) (sdk.AccAddress, error) {
+	return ak.Accounts.Indexes.Number.MatchExact(ctx, number)
+}
+
+// AddNonce attempts to add a nonce to the account's nonces list.
+func (ak AccountKeeper) AddNonce(ctx context.Context, addr sdk.AccAddress, nonce uint64) error {
+	nonceLimit := 20
+	an, err := ak.Nonces.Get(ctx, addr)
+	if err != nil {
+		return err
+	}
+	nonces := an.Nonces
+
+	// Return error if the nonce already exists.
+	minIndex := -1
+	for i, n := range nonces {
+		if minIndex == -1 || n < nonces[minIndex] {
+			minIndex = i
+		}
+		if n == nonce {
+			return errors.New("nonce already exists")
+		}
+	}
+
+	// Return error if the nonce list is full and the new nonce is less than the oldest nonce.
+	if len(nonces) >= nonceLimit && nonce < nonces[minIndex] {
+		return errors.New("Nonces at limit and can't replace the min nonce")
+	}
+
+	// Add the new nonce (replacing the oldest nonce if the list is full).
+	if len(nonces) >= nonceLimit {
+		nonces[minIndex] = nonce
+	} else {
+		nonces = append(nonces, nonce)
+	}
+
+	// Write the nonces back to the store
+	ak.Nonces.Set(ctx, addr, types.AccountNonces{ Nonces: nonces })
+	return nil
 }

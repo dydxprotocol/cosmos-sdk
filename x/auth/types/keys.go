@@ -28,4 +28,7 @@ var (
 
 	// AccountNumberStoreKeyPrefix prefix for account-by-id store
 	AccountNumberStoreKeyPrefix = collections.NewPrefix("accountNumber")
+
+	// NonceStoreKeyPrefix prefix for account nonces
+	NonceStoreKeyPrefix = collections.NewPrefix(3)
 )

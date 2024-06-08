@@ -61,3 +61,9 @@ message Params {
   uint64 sig_verify_cost_ed25519   = 4 [(gogoproto.customname) = "SigVerifyCostED25519"];
   uint64 sig_verify_cost_secp256k1 = 5 [(gogoproto.customname) = "SigVerifyCostSecp256k1"];
 }
+
+// AccountNonces defines a slice of nonces for each account.
+message AccountNonces {
+  option (amino.name)    = "cosmos-sdk/x/auth/AccountNonces";
+  repeated uint64 nonces = 1;
+}
