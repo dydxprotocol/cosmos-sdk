@@ -29,7 +29,7 @@ var _ v1.MsgServer = msgServer{}
 
 // SubmitProposal implements the MsgServer.SubmitProposal method.
 func (k msgServer) SubmitProposal(goCtx context.Context, msg *v1.MsgSubmitProposal) (*v1.MsgSubmitProposalResponse, error) {
-	fmt.Printf("EXPEDITED DEBUGGING: Proposal %+v\n", &msg)
+	fmt.Printf("EXPEDITED DEBUGGING: Proposal %+v\n", msg)
 	if msg.Title == "" {
 		return nil, errors.Wrap(sdkerrors.ErrInvalidRequest, "proposal title cannot be empty")
 	}
