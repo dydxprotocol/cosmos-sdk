@@ -29,6 +29,7 @@ var _ v1.MsgServer = msgServer{}
 
 // SubmitProposal implements the MsgServer.SubmitProposal method.
 func (k msgServer) SubmitProposal(goCtx context.Context, msg *v1.MsgSubmitProposal) (*v1.MsgSubmitProposalResponse, error) {
+	fmt.Printf("EXPEDITED DEBUGGING: Proposal %+v\n", &msg)
 	if msg.Title == "" {
 		return nil, errors.Wrap(sdkerrors.ErrInvalidRequest, "proposal title cannot be empty")
 	}
@@ -93,6 +94,8 @@ func (k msgServer) SubmitProposal(goCtx context.Context, msg *v1.MsgSubmitPropos
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("EXPEDITED DEBUGGING Proposal bytes: %+v\n", bytes)
 
 	// ref: https://github.com/cosmos/cosmos-sdk/issues/9683
 	ctx.GasMeter().ConsumeGas(

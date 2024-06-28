@@ -17,6 +17,7 @@ import (
 
 // SubmitProposal creates a new proposal given an array of messages
 func (keeper Keeper) SubmitProposal(ctx context.Context, messages []sdk.Msg, metadata, title, summary string, proposer sdk.AccAddress, expedited bool) (v1.Proposal, error) {
+	fmt.Printf("EXPEDITED DEBUGGING: title: %s, summary: %s, metadata: %s, expedited: %+v\n", title, summary, metadata, expedited)
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	err := keeper.assertMetadataLength(metadata)
 	if err != nil {
