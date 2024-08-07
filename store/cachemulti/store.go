@@ -3,14 +3,14 @@ package cachemulti
 import (
 	"fmt"
 	"io"
-	"sync"
+
+	dbm "github.com/cosmos/cosmos-db"
 
 	"cosmossdk.io/store/cachekv"
 	"cosmossdk.io/store/dbadapter"
+	"cosmossdk.io/store/lockingkv"
 	"cosmossdk.io/store/tracekv"
 	"cosmossdk.io/store/types"
-	dbm "github.com/cosmos/cosmos-db"
-	"golang.org/x/exp/slices"
 )
 
 // storeNameCtxKey is the TraceContext metadata key that identifies
@@ -31,24 +31,19 @@ type Store struct {
 
 	traceWriter  io.Writer
 	traceContext types.TraceContext
-
-	locks *sync.Map // map from string key to *sync.Mutex or *sync.RWMutex
 }
 
 var (
 	_ types.CacheMultiStore = Store{}
+	_ types.LockingStore    = Store{}
 )
 
 // NewFromKVStore creates a new Store object from a mapping of store keys to
 // CacheWrapper objects and a KVStore as the database. Each CacheWrapper store
 // is a branched store.
 func NewFromKVStore(
-	store types.KVStore,
-	stores map[types.StoreKey]types.CacheWrapper,
-	keys map[string]types.StoreKey,
-	traceWriter io.Writer,
-	traceContext types.TraceContext,
-	locks *sync.Map,
+	store types.KVStore, stores map[types.StoreKey]types.CacheWrapper,
+	keys map[string]types.StoreKey, traceWriter io.Writer, traceContext types.TraceContext,
 ) Store {
 	cms := Store{
 		db:           cachekv.NewStore(store),
@@ -56,7 +51,6 @@ func NewFromKVStore(
 		keys:         keys,
 		traceWriter:  traceWriter,
 		traceContext: traceContext,
-		locks:        locks,
 	}
 
 	for key, store := range stores {
@@ -73,13 +67,46 @@ func NewFromKVStore(
 	return cms
 }
 
+// NewLockingFromKVStore creates a new Store object from a mapping of store keys to
+// CacheWrapper objects and a KVStore as the database. Each CacheWrapper store
+// is a branched store.
+func NewLockingFromKVStore(
+	store types.KVStore, stores map[types.StoreKey]types.CacheWrapper,
+	keys map[string]types.StoreKey, traceWriter io.Writer, traceContext types.TraceContext,
+) Store {
+	cms := Store{
+		db:           cachekv.NewStore(store),
+		stores:       make(map[types.StoreKey]types.CacheWrap, len(stores)),
+		keys:         keys,
+		traceWriter:  traceWriter,
+		traceContext: traceContext,
+	}
+
+	for key, store := range stores {
+		if cms.TracingEnabled() {
+			tctx := cms.traceContext.Clone().Merge(types.TraceContext{
+				storeNameCtxKey: key.Name(),
+			})
+
+			store = tracekv.NewStore(store.(types.KVStore), cms.traceWriter, tctx)
+		}
+		if kvStoreKey, ok := key.(*types.KVStoreKey); ok && kvStoreKey.IsLocking() {
+			cms.stores[key] = lockingkv.NewStore(store.(types.KVStore))
+		} else {
+			cms.stores[key] = cachekv.NewStore(store.(types.KVStore))
+		}
+	}
+
+	return cms
+}
+
 // NewStore creates a new Store object from a mapping of store keys to
 // CacheWrapper objects. Each CacheWrapper store is a branched store.
 func NewStore(
 	db dbm.DB, stores map[types.StoreKey]types.CacheWrapper, keys map[string]types.StoreKey,
 	traceWriter io.Writer, traceContext types.TraceContext,
 ) Store {
-	return NewFromKVStore(dbadapter.Store{DB: db}, stores, keys, traceWriter, traceContext, nil)
+	return NewFromKVStore(dbadapter.Store{DB: db}, stores, keys, traceWriter, traceContext)
 }
 
 // NewLockingStore creates a new Store object from a mapping of store keys to
@@ -88,14 +115,7 @@ func NewLockingStore(
 	db dbm.DB, stores map[types.StoreKey]types.CacheWrapper, keys map[string]types.StoreKey,
 	traceWriter io.Writer, traceContext types.TraceContext,
 ) Store {
-	return NewFromKVStore(
-		dbadapter.Store{DB: db},
-		stores,
-		keys,
-		traceWriter,
-		traceContext,
-		&sync.Map{},
-	)
+	return NewLockingFromKVStore(dbadapter.Store{DB: db}, stores, keys, traceWriter, traceContext)
 }
 
 func newCacheMultiStoreFromCMS(cms Store) Store {
@@ -104,7 +124,7 @@ func newCacheMultiStoreFromCMS(cms Store) Store {
 		stores[k] = v
 	}
 
-	return NewFromKVStore(cms.db, stores, nil, cms.traceWriter, cms.traceContext, cms.locks)
+	return NewFromKVStore(cms.db, stores, nil, cms.traceWriter, cms.traceContext)
 }
 
 // SetTracer sets the tracer for the MultiStore that the underlying
@@ -153,88 +173,13 @@ func (cms Store) Write() {
 	}
 }
 
-// Lock, Unlock, RLockRW, LockRW, RUnlockRW, UnlockRW constitute a permissive locking interface
-// that can be used to synchronize concurrent access to the store. Locking of a key should
-// represent locking of some part of the store. Note that improper access is not enforced, and it is
-// the user's responsibility to ensure proper locking of any access by concurrent goroutines.
-//
-// Common mistakes may include:
-//   - Introducing data races by reading or writing state that is claimed by a competing goroutine
-//   - Introducing deadlocks by locking in different orders through multiple calls to locking methods.
-//     i.e. if A calls Lock(a) followed by Lock(b), and B calls Lock(b) followed by Lock(a)
-//   - Using a key as an exclusive lock after it has already been initialized as a read-write lock
-
-// Lock acquires exclusive locks on a set of keys.
-func (cms Store) Lock(keys [][]byte) {
-	for _, stringKey := range keysToSortedStrings(keys) {
-		v, _ := cms.locks.LoadOrStore(stringKey, &sync.Mutex{})
-		lock := v.(*sync.Mutex)
-		lock.Lock()
-	}
-}
-
-// Unlock releases exclusive locks on a set of keys.
-func (cms Store) Unlock(keys [][]byte) {
-	for _, key := range keys {
-		v, ok := cms.locks.Load(string(key))
-		if !ok {
-			panic("Key not found")
+// Unlock calls Unlock on each underlying LockingStore.
+func (cms Store) Unlock() {
+	for _, store := range cms.stores {
+		if s, ok := store.(types.LockingStore); ok {
+			s.Unlock()
 		}
-		lock := v.(*sync.Mutex)
-		lock.Unlock()
 	}
-}
-
-// RLockRW acquires read locks on a set of keys.
-func (cms Store) RLockRW(keys [][]byte) {
-	for _, stringKey := range keysToSortedStrings(keys) {
-		v, _ := cms.locks.LoadOrStore(stringKey, &sync.RWMutex{})
-		lock := v.(*sync.RWMutex)
-		lock.RLock()
-	}
-}
-
-// LockRW acquires write locks on a set of keys.
-func (cms Store) LockRW(keys [][]byte) {
-	for _, stringKey := range keysToSortedStrings(keys) {
-		v, _ := cms.locks.LoadOrStore(stringKey, &sync.RWMutex{})
-		lock := v.(*sync.RWMutex)
-		lock.Lock()
-	}
-}
-
-// RUnlockRW releases read locks on a set of keys.
-func (cms Store) RUnlockRW(keys [][]byte) {
-	for _, key := range keys {
-		v, ok := cms.locks.Load(string(key))
-		if !ok {
-			panic("Key not found")
-		}
-		lock := v.(*sync.RWMutex)
-		lock.RUnlock()
-	}
-}
-
-// UnlockRW releases write locks on a set of keys.
-func (cms Store) UnlockRW(keys [][]byte) {
-	for _, key := range keys {
-		v, ok := cms.locks.Load(string(key))
-		if !ok {
-			panic("Key not found")
-		}
-		lock := v.(*sync.RWMutex)
-		lock.Unlock()
-	}
-}
-
-func keysToSortedStrings(keys [][]byte) []string {
-	// Ensure that we always operate in a deterministic ordering when acquiring locks to prevent deadlock.
-	stringLockedKeys := make([]string, len(keys))
-	for i, key := range keys {
-		stringLockedKeys[i] = string(key)
-	}
-	slices.Sort(stringLockedKeys)
-	return stringLockedKeys
 }
 
 // Implements CacheWrapper.
@@ -250,6 +195,40 @@ func (cms Store) CacheWrapWithTrace(_ io.Writer, _ types.TraceContext) types.Cac
 // Implements MultiStore.
 func (cms Store) CacheMultiStore() types.CacheMultiStore {
 	return newCacheMultiStoreFromCMS(cms)
+}
+
+// CacheMultiStoreWithLocking branches each store wrapping each store with a cachekv store if not locked or
+// delegating to CacheWrapWithLocks if it is a LockingCacheWrapper.
+func (cms Store) CacheMultiStoreWithLocking(storeLocks map[types.StoreKey][][]byte) types.CacheMultiStore {
+	stores := make(map[types.StoreKey]types.CacheWrapper)
+	for k, v := range cms.stores {
+		stores[k] = v
+	}
+
+	cms2 := Store{
+		db:           cachekv.NewStore(cms.db),
+		stores:       make(map[types.StoreKey]types.CacheWrap, len(stores)),
+		keys:         cms.keys,
+		traceWriter:  cms.traceWriter,
+		traceContext: cms.traceContext,
+	}
+
+	for key, store := range stores {
+		if lockKeys, ok := storeLocks[key]; ok {
+			cms2.stores[key] = store.(types.LockingCacheWrapper).CacheWrapWithLocks(lockKeys)
+		} else {
+			if cms.TracingEnabled() {
+				tctx := cms.traceContext.Clone().Merge(types.TraceContext{
+					storeNameCtxKey: key.Name(),
+				})
+
+				store = tracekv.NewStore(store.(types.KVStore), cms.traceWriter, tctx)
+			}
+			cms2.stores[key] = cachekv.NewStore(store.(types.KVStore))
+		}
+	}
+
+	return cms2
 }
 
 // CacheMultiStoreWithVersion implements the MultiStore interface. It will panic
