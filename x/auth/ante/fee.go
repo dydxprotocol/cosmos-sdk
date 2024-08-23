@@ -106,6 +106,11 @@ func (dfd DeductFeeDecorator) checkDeductFee(ctx sdk.Context, sdkTx sdk.Tx, fee 
 		return sdkerrors.ErrUnknownAddress.Wrapf("fee payer address: %s does not exist", deductFeesFrom)
 	}
 
+	// Skip deducting fees it's a qualified Wasm Execution transaction.
+	if IsSingleWasmExecTx(sdkTx) && WasmExecExemptFromGas(dfd.bankKeeper, ctx, deductFeesFromAcc) {
+		return nil
+	}
+
 	// deduct the fees
 	if !fee.IsZero() {
 		err := DeductFees(dfd.bankKeeper, ctx, deductFeesFromAcc, fee)
