@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -56,6 +57,7 @@ func (q queryServer) Proposal(ctx context.Context, req *v1.QueryProposalRequest)
 
 // Proposals implements the Query/Proposals gRPC method
 func (q queryServer) Proposals(ctx context.Context, req *v1.QueryProposalsRequest) (*v1.QueryProposalsResponse, error) {
+	fmt.Println("Querying proposals -----------------------------------\n\n\n\n\n\n")
 	filteredProposals, pageRes, err := query.CollectionFilteredPaginate(ctx, q.k.Proposals, req.Pagination, func(key uint64, p v1.Proposal) (include bool, err error) {
 		matchVoter, matchDepositor, matchStatus := true, true, true
 
