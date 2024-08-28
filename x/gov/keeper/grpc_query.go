@@ -61,7 +61,7 @@ func (q queryServer) Proposals(ctx context.Context, req *v1.QueryProposalsReques
 	filteredProposals, pageRes, err := query.CollectionFilteredPaginate(ctx, q.k.Proposals, req.Pagination, func(key uint64, p v1.Proposal) (include bool, err error) {
 		matchVoter, matchDepositor, matchStatus := true, true, true
 
-		fmt.Printf("Filtering proposals ----------------------------------- %+v\n\n\n\n\n\n", p)
+		fmt.Printf("Filtering proposals ----------------------------------- %+v\n\n\n\n\n\n", p.Id)
 
 		// match status (if supplied/valid)
 		if v1.ValidProposalStatus(req.ProposalStatus) {
@@ -102,7 +102,7 @@ func (q queryServer) Proposals(ctx context.Context, req *v1.QueryProposalsReques
 		// continue to next item, do not include because we're appending results above.
 		return false, nil
 	}, func(_ uint64, value v1.Proposal) (*v1.Proposal, error) {
-		fmt.Printf("Error when filtering proposals %+v\n", value)
+		fmt.Printf("Filtering proposals again %+v\n", value.Id)
 		return &value, nil
 	})
 
