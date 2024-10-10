@@ -58,7 +58,9 @@ func WithAbortRate(rate int) func(*OptimisticExecution) {
 // the current OE.
 func (oe *OptimisticExecution) Reset() {
 	oe.mtx.Lock()
-	oe.logger.Info("!! OE reset", "oe_height", oe.request.Height)
+	if oe.request != nil {
+		oe.logger.Info("!! OE reset", "oe_height", oe.request.Height)
+	}
 	defer oe.mtx.Unlock()
 	oe.request = nil
 	oe.response = nil
@@ -99,7 +101,10 @@ func (oe *OptimisticExecution) Execute(req *abci.RequestProcessProposal) {
 		ProposerAddress:    req.ProposerAddress,
 	}
 
-	oe.logger.Info("!! OE started", "height", req.Height, "hash", hex.EncodeToString(req.Hash), "time", req.Time.String())
+	if oe.request != nil {
+		oe.logger.Info("!! OE started", "height", req.Height, "hash", hex.EncodeToString(req.Hash), "time", req.Time.String())
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	oe.cancelFunc = cancel
 	oe.initialized = true
@@ -150,16 +155,23 @@ func (oe *OptimisticExecution) Abort() {
 		return
 	}
 
-	oe.logger.Info("!! aborting OE", "oe_height", oe.request.Height, "hash", hex.EncodeToString(oe.request.Hash))
+	if oe.request != nil {
+		oe.logger.Info("!! aborting OE", "oe_height", oe.request.Height, "hash", hex.EncodeToString(oe.request.Hash))
+	}
 
 	oe.cancelFunc()
 	<-oe.stopCh
-	oe.logger.Info("!! aborted OE", "oe_height", oe.request.Height, "hash", hex.EncodeToString(oe.request.Hash))
+
+	if oe.request != nil {
+		oe.logger.Info("!! aborted OE", "oe_height", oe.request.Height, "hash", hex.EncodeToString(oe.request.Hash))
+	}
 }
 
 // WaitResult waits for the OE to finish and returns the result.
 func (oe *OptimisticExecution) WaitResult() (*abci.ResponseFinalizeBlock, error) {
 	<-oe.stopCh
-	oe.logger.Info("!! WaitResult: OE finished", "oe_height", oe.request.Height, "hash", hex.EncodeToString(oe.request.Hash))
+	if oe.request != nil {
+		oe.logger.Info("!! WaitResult: OE finished", "oe_height", oe.request.Height, "hash", hex.EncodeToString(oe.request.Hash))
+	}
 	return oe.response, oe.err
 }
