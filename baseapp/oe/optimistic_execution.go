@@ -129,7 +129,11 @@ func (oe *OptimisticExecution) AbortIfNeeded(req *abci.RequestFinalizeBlock) boo
 	defer oe.mtx.Unlock()
 
 	if !bytes.Equal(oe.request.Hash, req.Hash) {
-		oe.logger.Error("OE aborted due to hash mismatch", "oe_hash", hex.EncodeToString(oe.request.Hash), "req_hash", hex.EncodeToString(req.Hash), "oe_height", oe.request.Height, "req_height", req.Height)
+		if oe.request.Height != req.Height {
+			oe.logger.Warn("OE aborted due to height mismatch", "oe_hash", hex.EncodeToString(oe.request.Hash), "req_hash", hex.EncodeToString(req.Hash), "oe_height", oe.request.Height, "req_height", req.Height)
+		} else {
+			oe.logger.Error("OE aborted due to hash mismatch", "oe_hash", hex.EncodeToString(oe.request.Hash), "req_hash", hex.EncodeToString(req.Hash), "oe_height", oe.request.Height, "req_height", req.Height)
+		}
 		oe.cancelFunc()
 		return true
 	} else if oe.abortRate > 0 && rand.Intn(100) < oe.abortRate {
