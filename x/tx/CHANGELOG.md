@@ -31,7 +31,17 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+<<<<<<< HEAD
 ## v0.8.0
+=======
+## [v0.13.7](https://github.com/cosmos/cosmos-sdk/releases/tag/x/tx/v0.13.7) - 2024-12-16
+
+### Bug Fixes
+
+* Fix [ABS-0043](https://github.com/cosmos/cosmos-sdk/security/advisories/GHSA-8wcc-m6j2-qxvm) Limit recursion depth for unknown field detection
+
+## [v0.13.6](https://github.com/cosmos/cosmos-sdk/releases/tag/x/tx/v0.13.6) - 2024-12-12
+>>>>>>> ba7ac458c9 (Merge commit from fork)
 
 ### Improvements
 
