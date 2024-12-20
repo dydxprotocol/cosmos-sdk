@@ -17,7 +17,7 @@ var (
 
 	// MaxUnpackAnySubCalls extension point that defines the maximum number of sub-calls allowed during the unpacking
 	// process of protobuf Any messages.
-	MaxUnpackAnySubCalls = 100
+	MaxUnpackAnySubCalls = 10000
 
 	// MaxUnpackAnyRecursionDepth extension point that defines the maximum allowed recursion depth during protobuf Any
 	// message unpacking.
@@ -287,7 +287,9 @@ func (registry *interfaceRegistry) UnpackAny(any *Any, iface interface{}) error 
 		maxDepth: MaxUnpackAnyRecursionDepth,
 		maxCalls: &sharedCounter{count: MaxUnpackAnySubCalls},
 	}
-	return unpacker.UnpackAny(any, iface)
+	err := unpacker.UnpackAny(any, iface)
+	fmt.Printf("UnpackAny: Max depth was %d, max calls was %d\n", (MaxUnpackAnyRecursionDepth - unpacker.maxDepth), (MaxUnpackAnySubCalls - unpacker.maxCalls.count))
+	return err
 }
 
 // sharedCounter is a type that encapsulates a counter value
