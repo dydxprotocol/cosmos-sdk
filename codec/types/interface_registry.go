@@ -288,7 +288,9 @@ func (registry *interfaceRegistry) UnpackAny(any *Any, iface interface{}) error 
 		maxCalls: &sharedCounter{count: MaxUnpackAnySubCalls},
 	}
 	err := unpacker.UnpackAny(any, iface)
-	fmt.Printf("UnpackAny: Max depth was %d, max calls was %d\n", (MaxUnpackAnyRecursionDepth - unpacker.maxDepth), (MaxUnpackAnySubCalls - unpacker.maxCalls.count))
+	if unpacker.maxDepth < 2 || unpacker.maxCalls.count < MaxUnpackAnySubCalls-100 {
+		fmt.Printf("UnpackAny: Max depth was %d, max calls was %d\n", (MaxUnpackAnyRecursionDepth - unpacker.maxDepth), (MaxUnpackAnySubCalls - unpacker.maxCalls.count))
+	}
 	return err
 }
 
