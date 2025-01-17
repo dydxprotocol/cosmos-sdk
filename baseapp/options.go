@@ -380,3 +380,8 @@ func (app *BaseApp) SetStreamingManager(manager storetypes.StreamingManager) {
 func (app *BaseApp) SetDisableBlockGasMeter(disableBlockGasMeter bool) {
 	app.disableBlockGasMeter = disableBlockGasMeter
 }
+
+func SetIAVLV2(rootPath string) func(*BaseApp) {
+	fmt.Println("SetIAVLV2 rootPath:", rootPath)
+	return func(bapp *BaseApp) { bapp.cms.SetIAVLV2(rootPath) }
+}

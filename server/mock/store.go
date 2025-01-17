@@ -168,6 +168,10 @@ func (ms multiStore) WorkingHash() []byte {
 	panic("not implemented")
 }
 
+func (ms multiStore) SetIAVLV2(string) error {
+	panic("not implemented")
+}
+
 var _ storetypes.KVStore = kvStore{}
 
 type kvStore struct {
