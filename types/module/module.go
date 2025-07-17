@@ -793,6 +793,7 @@ func (m *Manager) BeginBlock(ctx sdk.Context) (sdk.BeginBlock, error) {
 func (m *Manager) EndBlock(ctx sdk.Context) (sdk.EndBlock, error) {
 	ctx = ctx.WithEventManager(sdk.NewEventManager())
 	validatorUpdates := []abci.ValidatorUpdate{}
+	proposerSetUpdates := []abci.ValidatorUpdate{}
 
 	for _, moduleName := range m.OrderEndBlockers {
 		if module, ok := m.Modules[moduleName].(appmodule.HasEndBlocker); ok {
@@ -802,22 +803,62 @@ func (m *Manager) EndBlock(ctx sdk.Context) (sdk.EndBlock, error) {
 			}
 		} else if module, ok := m.Modules[moduleName].(HasABCIEndBlock); ok {
 			moduleValUpdates, err := module.EndBlock(ctx)
+			fmt.Println("tian, in cosmos-sdk module manager, abci endblock", "module name", moduleName, "err", err, "len", len(moduleValUpdates))
 			if err != nil {
 				return sdk.EndBlock{}, err
 			}
-			// use these validator updates if provided, the module manager assumes
-			// only one module will update the validator set
+			// use these validator updates if provided, the module manager assumes only one module will update the validator set, besides
+			// govplus module that will update whether validators can propose
 			if len(moduleValUpdates) > 0 {
-				if len(validatorUpdates) > 0 {
-					return sdk.EndBlock{}, errors.New("validator EndBlock updates already set by a previous module")
+				if moduleName == "govplus" {
+					for _, update := range moduleValUpdates {
+						proposerSetUpdates = append(proposerSetUpdates, abci.ValidatorUpdate{
+							PubKey:     update.PubKey,
+							Power:      update.Power,
+							CanPropose: update.CanPropose,
+						})
+					}
+					continue
 				}
 
-				for _, updates := range moduleValUpdates {
-					validatorUpdates = append(validatorUpdates, abci.ValidatorUpdate{PubKey: updates.PubKey, Power: updates.Power})
+				if len(validatorUpdates) > 0 {
+					fmt.Println("tian, in cosmos-sdk module manager, abci endblock, validator updates already set by a previous module")
+					return sdk.EndBlock{}, errors.New("validator EndBlock updates already set by a previous module")
+				}
+				for _, update := range moduleValUpdates {
+					validatorUpdates = append(validatorUpdates, abci.ValidatorUpdate{
+						PubKey:     update.PubKey,
+						Power:      update.Power,
+						CanPropose: update.CanPropose,
+					})
 				}
 			}
 		} else {
 			continue
+		}
+	}
+
+	// Merge proposer set updates from x/govplus with validator updates.
+	if len(proposerSetUpdates) > 0 {
+		if len(validatorUpdates) > 0 {
+			proposerSet := make(map[string]abci.ValidatorUpdate, len(proposerSetUpdates))
+			for _, update := range proposerSetUpdates {
+				proposerSet[update.PubKey.String()] = update
+			}
+
+			for i, update := range validatorUpdates {
+				if proposerUpdate, exists := proposerSet[update.PubKey.String()]; exists {
+					validatorUpdates[i].CanPropose = proposerUpdate.CanPropose
+					delete(proposerSet, update.PubKey.String())
+				}
+			}
+
+			// Append any remaining proposer updates that were not in the validator updates.
+			for _, update := range proposerSet {
+				validatorUpdates = append(validatorUpdates, update)
+			}
+		} else {
+			validatorUpdates = proposerSetUpdates
 		}
 	}
 

@@ -284,6 +284,19 @@ func (v Validator) ABCIValidatorUpdateZero() abci.ValidatorUpdate {
 	}
 }
 
+func (v Validator) ABCIValidatorUpdateCanPropose(r math.Int, canPropose bool) abci.ValidatorUpdate {
+	tmProtoPk, err := v.TmConsPublicKey()
+	if err != nil {
+		panic(err)
+	}
+
+	return abci.ValidatorUpdate{
+		PubKey:     tmProtoPk,
+		Power:      v.ConsensusPower(r),
+		CanPropose: canPropose,
+	}
+}
+
 // SetInitialCommission attempts to set a validator's initial commission. An
 // error is returned if the commission is invalid.
 func (v Validator) SetInitialCommission(commission Commission) (Validator, error) {

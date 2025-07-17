@@ -316,7 +316,7 @@ func TestValidatorToCmt(t *testing.T) {
 		vals.Validators = append(vals.Validators, val)
 		cmtPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
 		require.NoError(t, err)
-		expected[i] = cmttypes.NewValidator(cmtPk, val.ConsensusPower(sdk.DefaultPowerReduction))
+		expected[i] = cmttypes.NewValidator(cmtPk, val.ConsensusPower(sdk.DefaultPowerReduction), true)
 	}
 	vs, err := testutil.ToCmtValidators(vals, sdk.DefaultPowerReduction)
 	require.NoError(t, err)
