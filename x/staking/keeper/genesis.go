@@ -82,6 +82,32 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 		}
 	}
 
+	if len(data.Proposers) == 0 {
+		// If no proposers are specified, set all validators as eligible proposers
+		for _, validator := range data.Validators {
+			if err := k.SetProposer(ctx, validator.GetOperator()); err != nil {
+				panic(fmt.Sprintf("failed to set %s as a proposer: %v", validator.GetOperator(), err))
+			}
+		}
+	} else {
+		for _, proposer := range data.Proposers {
+			// Ensure that proposer is a valid validator
+			valAddrBz, err := k.validatorAddressCodec.StringToBytes(proposer)
+			if err != nil {
+				panic(fmt.Errorf("invalid proposer address: %s", err))
+			}
+			if _, err := k.GetValidator(ctx, valAddrBz); err != nil {
+				panic(fmt.Sprintf("proposer %s is not a valid validator", proposer))
+			}
+
+			// Set proposer
+			err = k.SetProposer(ctx, proposer)
+			if err != nil {
+				panic(fmt.Sprintf("failed to set %s as a proposer: %v", proposer, err))
+			}
+		}
+	}
+
 	for _, delegation := range data.Delegations {
 		delegatorAddress, err := k.authKeeper.AddressCodec().StringToBytes(delegation.DelegatorAddress)
 		if err != nil {
@@ -266,6 +292,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
+	allProposers, err := k.GetAllProposers(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	return &types.GenesisState{
 		Params:               params,
 		LastTotalPower:       totalPower,
@@ -275,5 +306,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		UnbondingDelegations: unbondingDelegations,
 		Redelegations:        redelegations,
 		Exported:             true,
+		Proposers:            allProposers,
 	}
 }

@@ -40,6 +40,10 @@ message GenesisState {
 
   // exported defines a bool to identify whether the chain dealing with exported or initialized genesis.
   bool exported = 8;
+
+  // proposers defines the set of validators (by operator addresses) that are eligible to propose blocks.
+  repeated string proposers = 9
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // LastValidatorPower required for validator set update logic.

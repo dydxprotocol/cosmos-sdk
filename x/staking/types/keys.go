@@ -56,6 +56,8 @@ var (
 	ParamsKey = []byte{0x51} // prefix for parameters for module x/staking
 
 	DelegationByValIndexKey = []byte{0x71} // key for delegations by a validator
+
+	ProposerKeyPrefix = []byte("Proposer:") // prefix for proposers (only a subset of validators can propose blocks)
 )
 
 // UnbondingType defines the type of unbonding operation
@@ -422,4 +424,8 @@ func GetHistoricalInfoKey(height int64) []byte {
 	heightBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(heightBytes, uint64(height))
 	return append(HistoricalInfoKey, heightBytes...)
+}
+
+func GetProposerKey(operatorAddr sdk.ValAddress) []byte {
+	return append(ProposerKeyPrefix, address.MustLengthPrefix(operatorAddr)...)
 }

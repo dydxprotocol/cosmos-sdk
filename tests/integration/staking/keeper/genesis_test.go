@@ -131,6 +131,84 @@ func TestInitGenesis(t *testing.T) {
 	}
 
 	assert.DeepEqual(t, abcivals, vals)
+
+	// Verify all validators are proposers.
+	proposers, err := f.stakingKeeper.GetAllProposers(f.sdkCtx)
+	assert.NilError(t, err)
+	assert.Equal(t, len(validators), len(proposers), "all validators should be proposers when none specified in genesis")
+
+	for _, val := range validators {
+		isProposer, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, val.OperatorAddress)
+		assert.NilError(t, err)
+		assert.Assert(t, isProposer, "validator %s should be a proposer", val.OperatorAddress)
+	}
+
+	// Verify proposers in genesis export.
+	exportedGenesis := f.stakingKeeper.ExportGenesis(f.sdkCtx)
+	assert.Equal(t, len(validators), len(exportedGenesis.Proposers), "exported genesis should contain all proposers")
+}
+
+func TestInitGenesisWithProposerSet(t *testing.T) {
+	f, addrs := bootstrapGenesisTest(t, 3)
+
+	validators := make([]types.Validator, 3)
+	for i := 0; i < 3; i++ {
+		pk, err := codectypes.NewAnyWithValue(PKs[i])
+		assert.NilError(t, err)
+
+		validators[i] = types.Validator{
+			OperatorAddress: sdk.ValAddress(addrs[i]).String(),
+			ConsensusPubkey: pk,
+			Status:          types.Bonded,
+			Tokens:          math.NewInt(100),
+			DelegatorShares: math.LegacyNewDec(100),
+		}
+	}
+
+	params := types.DefaultParams()
+	params.BondDenom = sdk.DefaultBondDenom
+
+	// Set only first two validators as proposers
+	proposers := []string{validators[0].OperatorAddress, validators[1].OperatorAddress}
+	genesisState := &types.GenesisState{
+		Params:     params,
+		Validators: validators,
+		Proposers:  proposers,
+	}
+
+	// Fund bonded pool
+	assert.NilError(t,
+		banktestutil.FundModuleAccount(
+			f.sdkCtx,
+			f.bankKeeper,
+			types.BondedPoolName,
+			sdk.NewCoins(sdk.NewCoin(params.BondDenom, math.NewInt(300))),
+		),
+	)
+
+	// Init genesis
+	f.stakingKeeper.InitGenesis(f.sdkCtx, genesisState)
+
+	// Verify proposer set
+	actualProposers, err := f.stakingKeeper.GetAllProposers(f.sdkCtx)
+	assert.NilError(t, err)
+	assert.DeepEqual(
+		t,
+		[]string{validators[0].OperatorAddress, validators[1].OperatorAddress},
+		actualProposers,
+	)
+
+	isProposer0, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, validators[0].OperatorAddress)
+	assert.NilError(t, err)
+	assert.Assert(t, isProposer0)
+
+	isProposer1, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, validators[1].OperatorAddress)
+	assert.NilError(t, err)
+	assert.Assert(t, isProposer1)
+
+	isProposer2, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, validators[2].OperatorAddress)
+	assert.NilError(t, err)
+	assert.Assert(t, !isProposer2)
 }
 
 func TestInitGenesis_PoolsBalanceMismatch(t *testing.T) {
