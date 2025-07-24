@@ -8,6 +8,7 @@ import (
 	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/iavl"
+	iavldb "github.com/cosmos/iavl/db"
 	ics23 "github.com/cosmos/ics23/go"
 
 	errorsmod "cosmossdk.io/errors"
@@ -32,6 +33,104 @@ var (
 	_ types.StoreWithInitialVersion = (*Store)(nil)
 )
 
+// dbAdapter adapts cosmos-db.DB to iavl/db.DB
+type dbAdapter struct {
+	db dbm.DB
+}
+
+// dbIteratorAdapter adapts cosmos-db.Iterator to iavl/db.Iterator
+type dbIteratorAdapter struct {
+	iter dbm.Iterator
+}
+
+func (i *dbIteratorAdapter) Domain() ([]byte, []byte) {
+	return i.iter.Domain()
+}
+
+func (i *dbIteratorAdapter) Valid() bool {
+	return i.iter.Valid()
+}
+
+func (i *dbIteratorAdapter) Next() {
+	i.iter.Next()
+}
+
+func (i *dbIteratorAdapter) Key() []byte {
+	return i.iter.Key()
+}
+
+func (i *dbIteratorAdapter) Value() []byte {
+	return i.iter.Value()
+}
+
+func (i *dbIteratorAdapter) Error() error {
+	return i.iter.Error()
+}
+
+func (i *dbIteratorAdapter) Close() error {
+	return i.iter.Close()
+}
+
+func (d *dbAdapter) Get(key []byte) ([]byte, error) {
+	return d.db.Get(key)
+}
+
+func (d *dbAdapter) Has(key []byte) (bool, error) {
+	return d.db.Has(key)
+}
+
+func (d *dbAdapter) Set(key, value []byte) error {
+	return d.db.Set(key, value)
+}
+
+func (d *dbAdapter) SetSync(key, value []byte) error {
+	return d.db.SetSync(key, value)
+}
+
+func (d *dbAdapter) Delete(key []byte) error {
+	return d.db.Delete(key)
+}
+
+func (d *dbAdapter) DeleteSync(key []byte) error {
+	return d.db.DeleteSync(key)
+}
+
+func (d *dbAdapter) Iterator(start, end []byte) (iavldb.Iterator, error) {
+	iter, err := d.db.Iterator(start, end)
+	if err != nil {
+		return nil, err
+	}
+	return &dbIteratorAdapter{iter: iter}, nil
+}
+
+func (d *dbAdapter) ReverseIterator(start, end []byte) (iavldb.Iterator, error) {
+	iter, err := d.db.ReverseIterator(start, end)
+	if err != nil {
+		return nil, err
+	}
+	return &dbIteratorAdapter{iter: iter}, nil
+}
+
+func (d *dbAdapter) Close() error {
+	return d.db.Close()
+}
+
+func (d *dbAdapter) NewBatch() iavldb.Batch {
+	return d.db.NewBatch()
+}
+
+func (d *dbAdapter) NewBatchWithSize(size int) iavldb.Batch {
+	return d.db.NewBatch()
+}
+
+func (d *dbAdapter) Print() error {
+	return d.db.Print()
+}
+
+func (d *dbAdapter) Stats() map[string]string {
+	return d.db.Stats()
+}
+
 // Store Implements types.KVStore and CommitKVStore.
 type Store struct {
 	tree    Tree
@@ -39,19 +138,32 @@ type Store struct {
 	metrics metrics.StoreMetrics
 }
 
-// LoadStore returns an IAVL Store as a CommitKVStore. Internally, it will load the
-// store's version (id) from the provided DB. An error is returned if the version
-// fails to load, or if called with a positive version on an empty tree.
+// LoadStore loads an IAVL Store with the given DB. An error is returned if the store
+// fails to load. If the store does not exist, it will be created.
 func LoadStore(db dbm.DB, logger log.Logger, key types.StoreKey, id types.CommitID, cacheSize int, disableFastNode bool, metrics metrics.StoreMetrics) (types.CommitKVStore, error) {
-	return LoadStoreWithInitialVersion(db, logger, key, id, 0, cacheSize, disableFastNode, metrics)
+	adapter := &dbAdapter{db: db}
+	tree := iavl.NewMutableTree(adapter, cacheSize, disableFastNode, logger)
+
+	_, err := tree.LoadVersion(id.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Store{
+		tree:    &mutableTreeWrapper{MutableTree: tree},
+		logger:  logger,
+		metrics: metrics,
+	}, nil
 }
 
-// LoadStoreWithInitialVersion returns an IAVL Store as a CommitKVStore setting its initialVersion
+// LoadStoreWithInitialVersion loads an IAVL Store with the given DB and initial version.
+// The initial version is the version that the store will be initialized to, which corresponds
 // to the one given. Internally, it will load the store's version (id) from the
 // provided DB. An error is returned if the version fails to load, or if called with a positive
 // version on an empty tree.
 func LoadStoreWithInitialVersion(db dbm.DB, logger log.Logger, key types.StoreKey, id types.CommitID, initialVersion uint64, cacheSize int, disableFastNode bool, metrics metrics.StoreMetrics) (types.CommitKVStore, error) {
-	tree := iavl.NewMutableTree(db, cacheSize, disableFastNode, logger, iavl.InitialVersionOption(initialVersion))
+	adapter := &dbAdapter{db: db}
+	tree := iavl.NewMutableTree(adapter, cacheSize, disableFastNode, logger, iavl.InitialVersionOption(initialVersion))
 
 	isUpgradeable, err := tree.IsUpgradeable()
 	if err != nil {
@@ -77,7 +189,7 @@ func LoadStoreWithInitialVersion(db dbm.DB, logger log.Logger, key types.StoreKe
 	}
 
 	return &Store{
-		tree:    tree,
+		tree:    &mutableTreeWrapper{MutableTree: tree},
 		logger:  logger,
 		metrics: metrics,
 	}, nil
@@ -91,7 +203,7 @@ func LoadStoreWithInitialVersion(db dbm.DB, logger log.Logger, key types.StoreKe
 // passed into iavl.MutableTree
 func UnsafeNewStore(tree *iavl.MutableTree) *Store {
 	return &Store{
-		tree:    tree,
+		tree:    &mutableTreeWrapper{MutableTree: tree},
 		metrics: metrics.NewNoOpMetrics(),
 	}
 }
@@ -274,11 +386,11 @@ func (st *Store) Export(version int64) (*iavl.Exporter, error) {
 
 // Import imports an IAVL tree at the given version, returning an iavl.Importer for importing.
 func (st *Store) Import(version int64) (*iavl.Importer, error) {
-	tree, ok := st.tree.(*iavl.MutableTree)
+	tree, ok := st.tree.(*mutableTreeWrapper)
 	if !ok {
 		return nil, errors.New("iavl import failed: unable to find mutable tree")
 	}
-	return tree.Import(version)
+	return tree.MutableTree.Import(version)
 }
 
 // Handle gatest the latest height, if height is 0

@@ -1,6 +1,10 @@
+//go:build test_ledger_mock
+// +build test_ledger_mock
+
 package legacybech32
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,6 +19,12 @@ func TestBeach32ifPbKey(t *testing.T) {
 	require := require.New(t)
 	path := *hd.NewFundraiserParams(0, sdk.CoinType, 0)
 	priv, err := ledger.NewPrivKeySecp256k1Unsafe(path)
+
+	// Skip test if ledger support is not available
+	if err != nil && strings.Contains(err.Error(), "support for ledger devices is not available") {
+		t.Skip("Skipping test: ledger support not available")
+	}
+
 	require.Nil(err, "%s", err)
 	require.NotNil(priv)
 

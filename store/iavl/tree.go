@@ -3,6 +3,7 @@ package iavl
 import (
 	"fmt"
 
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/iavl"
 
 	"cosmossdk.io/store/types"
@@ -10,7 +11,7 @@ import (
 
 var (
 	_ Tree = (*immutableTree)(nil)
-	_ Tree = (*iavl.MutableTree)(nil)
+	_ Tree = (*mutableTreeWrapper)(nil)
 )
 
 type (
@@ -44,7 +45,52 @@ type (
 	immutableTree struct {
 		*iavl.ImmutableTree
 	}
+
+	// mutableTreeWrapper wraps iavl.MutableTree to implement Tree interface
+	mutableTreeWrapper struct {
+		*iavl.MutableTree
+	}
+
+	// iteratorAdapter adapts dbm.Iterator to store/types.Iterator
+	iteratorAdapter struct {
+		iter dbm.Iterator
+	}
 )
+
+// Domain implements types.Iterator
+func (i *iteratorAdapter) Domain() ([]byte, []byte) {
+	return i.iter.Domain()
+}
+
+// Valid implements types.Iterator
+func (i *iteratorAdapter) Valid() bool {
+	return i.iter.Valid()
+}
+
+// Next implements types.Iterator
+func (i *iteratorAdapter) Next() {
+	i.iter.Next()
+}
+
+// Key implements types.Iterator
+func (i *iteratorAdapter) Key() []byte {
+	return i.iter.Key()
+}
+
+// Value implements types.Iterator
+func (i *iteratorAdapter) Value() []byte {
+	return i.iter.Value()
+}
+
+// Error implements types.Iterator
+func (i *iteratorAdapter) Error() error {
+	return i.iter.Error()
+}
+
+// Close implements types.Iterator
+func (i *iteratorAdapter) Close() error {
+	return i.iter.Close()
+}
 
 func (it *immutableTree) Set(_, _ []byte) (bool, error) {
 	panic("cannot call 'Set' on an immutable IAVL tree")
@@ -67,20 +113,20 @@ func (it *immutableTree) SetInitialVersion(_ uint64) {
 }
 
 func (it *immutableTree) VersionExists(version int64) bool {
-	return it.Version() == version
+	return it.ImmutableTree.Version() == version
 }
 
 func (it *immutableTree) GetVersioned(key []byte, version int64) ([]byte, error) {
-	if it.Version() != version {
-		return nil, fmt.Errorf("version mismatch on immutable IAVL tree; got: %d, expected: %d", version, it.Version())
+	if it.ImmutableTree.Version() != version {
+		return nil, fmt.Errorf("version mismatch on immutable IAVL tree; got: %d, expected: %d", version, it.ImmutableTree.Version())
 	}
 
-	return it.Get(key)
+	return it.ImmutableTree.Get(key)
 }
 
 func (it *immutableTree) GetImmutable(version int64) (*iavl.ImmutableTree, error) {
-	if it.Version() != version {
-		return nil, fmt.Errorf("version mismatch on immutable IAVL tree; got: %d, expected: %d", version, it.Version())
+	if it.ImmutableTree.Version() != version {
+		return nil, fmt.Errorf("version mismatch on immutable IAVL tree; got: %d, expected: %d", version, it.ImmutableTree.Version())
 	}
 
 	return it.ImmutableTree, nil
@@ -96,4 +142,20 @@ func (it *immutableTree) LoadVersionForOverwriting(targetVersion int64) error {
 
 func (it *immutableTree) WorkingHash() []byte {
 	panic("cannot call 'WorkingHash' on an immutable IAVL tree")
+}
+
+func (it *immutableTree) Iterator(start, end []byte, ascending bool) (types.Iterator, error) {
+	iter, err := it.ImmutableTree.Iterator(start, end, ascending)
+	if err != nil {
+		return nil, err
+	}
+	return &iteratorAdapter{iter: iter}, nil
+}
+
+func (mt *mutableTreeWrapper) Iterator(start, end []byte, ascending bool) (types.Iterator, error) {
+	iter, err := mt.MutableTree.Iterator(start, end, ascending)
+	if err != nil {
+		return nil, err
+	}
+	return &iteratorAdapter{iter: iter}, nil
 }

@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 
 	proto "github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc/codes"
@@ -41,7 +40,7 @@ func (k Querier) Evidence(c context.Context, req *types.QueryEvidenceRequest) (*
 
 	decodedHash, err := hex.DecodeString(req.Hash)
 	if err != nil {
-		return nil, fmt.Errorf("invalid evidence hash: %w", err)
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	evidence, _ := k.k.Evidences.Get(ctx, decodedHash)

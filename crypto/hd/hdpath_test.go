@@ -185,7 +185,31 @@ func TestDeriveHDPathRange(t *testing.T) {
 	}
 }
 
-func ExampleStringifyPathParams() { //nolint:govet // ignore naming convention
+// Ensuring that we don't crash if values have trailing slashes
+// See issue https://github.com/cosmos/cosmos-sdk/issues/8557.
+func TestDerivePrivateKeyForPathDoNotCrash(t *testing.T) {
+	paths := []string{
+		"m/5/",
+		"m/5",
+		"/44",
+		"m//5",
+		"m/0/7",
+		"/",
+		" m       /0/7",          // Test case from fuzzer
+		"              /       ", // Test case from fuzzer
+		"m///7//////",
+	}
+
+	for _, path := range paths {
+		path := path
+		t.Run(path, func(t *testing.T) {
+			_, _ = hd.DerivePrivateKeyForPath([32]byte{}, [32]byte{}, path)
+		})
+	}
+}
+
+func ExampleBIP44Params_String() { //nolint:govet // ignore naming convention
+	// This example demonstrates how to create and stringify HD path parameters
 	path := hd.NewParams(44, 0, 0, false, 0)
 	fmt.Println(path.String())
 	path = hd.NewParams(44, 33, 7, true, 9)
@@ -195,7 +219,8 @@ func ExampleStringifyPathParams() { //nolint:govet // ignore naming convention
 	// m/44'/33'/7'/1/9
 }
 
-func ExampleSomeBIP32TestVecs() { //nolint:govet // ignore naming convention
+func ExampleDerivePrivateKeyForPath() { //nolint:govet // ignore naming convention
+	// This example demonstrates BIP32 test vectors for HD key derivation
 	seed := mnemonicToSeed("barrel original fuel morning among eternal " +
 		"filter ball stove pluck matrix mechanic")
 	master, ch := hd.ComputeMastersFromSeed(seed)
@@ -279,27 +304,4 @@ func ExampleSomeBIP32TestVecs() { //nolint:govet // ignore naming convention
 	// BIP 32 example
 	//
 	// c4c11d8c03625515905d7e89d25dfc66126fbc629ecca6db489a1a72fc4bda78
-}
-
-// Ensuring that we don't crash if values have trailing slashes
-// See issue https://github.com/cosmos/cosmos-sdk/issues/8557.
-func TestDerivePrivateKeyForPathDoNotCrash(t *testing.T) {
-	paths := []string{
-		"m/5/",
-		"m/5",
-		"/44",
-		"m//5",
-		"m/0/7",
-		"/",
-		" m       /0/7",          // Test case from fuzzer
-		"              /       ", // Test case from fuzzer
-		"m///7//////",
-	}
-
-	for _, path := range paths {
-		path := path
-		t.Run(path, func(t *testing.T) {
-			_, _ = hd.DerivePrivateKeyForPath([32]byte{}, [32]byte{}, path)
-		})
-	}
 }

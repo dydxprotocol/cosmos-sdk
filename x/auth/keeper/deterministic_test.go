@@ -97,10 +97,12 @@ func (suite *DeterministicTestSuite) createAndSetAccounts(t *rapid.T, count int)
 		return i
 	}).Draw(t, "acc-nums")
 
-	// then we change account numbers in such a way that there cannot be accounts with the same account number
+	// Use a larger multiplier and add a unique offset to ensure no conflicts across test runs
 	lane := atomic.AddUint64(&suite.accountNumberLanes, 1)
+	baseOffset := lane * 100000 // Increased from 1000 to 100000 for better separation
+
 	for i := range accNums {
-		accNums[i] += lane * 1000
+		accNums[i] += baseOffset + uint64(i)*1000 // Add additional offset per account
 	}
 
 	for i := 0; i < count; i++ {
@@ -110,6 +112,13 @@ func (suite *DeterministicTestSuite) createAndSetAccounts(t *rapid.T, count int)
 		seq := rapid.Uint64().Draw(t, "sequence")
 
 		acc1 := types.NewBaseAccount(addr, &pub, accNum, seq)
+
+		// Check if account already exists and remove it to avoid conflicts
+		if suite.accountKeeper.HasAccount(suite.ctx, addr) {
+			existingAcc := suite.accountKeeper.GetAccount(suite.ctx, addr)
+			suite.accountKeeper.RemoveAccount(suite.ctx, existingAcc)
+		}
+
 		suite.accountKeeper.SetAccount(suite.ctx, acc1)
 		accs = append(accs, acc1)
 	}
@@ -121,6 +130,11 @@ func (suite *DeterministicTestSuite) TestGRPCQueryAccount() {
 		accs := suite.createAndSetAccounts(t, 1)
 		req := &types.QueryAccountRequest{Address: accs[0].GetAddress().String()}
 		testdata.DeterministicIterations(suite.ctx, suite.T(), req, suite.queryClient.Account, 0, true)
+
+		// Clean up accounts after test
+		for _, acc := range accs {
+			suite.accountKeeper.RemoveAccount(suite.ctx, acc)
+		}
 	})
 
 	// Regression tests
@@ -128,6 +142,13 @@ func (suite *DeterministicTestSuite) TestGRPCQueryAccount() {
 	seq := uint64(98)
 
 	acc1 := types.NewBaseAccount(addr, &secp256k1.PubKey{Key: pub}, accNum, seq)
+
+	// Check if account already exists and remove it to avoid conflicts
+	if suite.accountKeeper.HasAccount(suite.ctx, acc1.GetAddress()) {
+		existingAcc := suite.accountKeeper.GetAccount(suite.ctx, acc1.GetAddress())
+		suite.accountKeeper.RemoveAccount(suite.ctx, existingAcc)
+	}
+
 	suite.accountKeeper.SetAccount(suite.ctx, acc1)
 
 	req := &types.QueryAccountRequest{Address: acc1.GetAddress().String()}
@@ -182,6 +203,11 @@ func (suite *DeterministicTestSuite) TestGRPCQueryAccountAddressByID() {
 		accs := suite.createAndSetAccounts(t, 1)
 		req := &types.QueryAccountAddressByIDRequest{AccountId: accs[0].GetAccountNumber()}
 		testdata.DeterministicIterations(suite.ctx, suite.T(), req, suite.queryClient.AccountAddressByID, 0, true)
+
+		// Clean up accounts after test
+		for _, acc := range accs {
+			suite.accountKeeper.RemoveAccount(suite.ctx, acc)
+		}
 	})
 
 	// Regression test
@@ -189,6 +215,12 @@ func (suite *DeterministicTestSuite) TestGRPCQueryAccountAddressByID() {
 	seq := uint64(0)
 
 	acc1 := types.NewBaseAccount(addr, &secp256k1.PubKey{Key: pub}, accNum, seq)
+
+	// Check if account already exists and remove it to avoid conflicts
+	if suite.accountKeeper.HasAccount(suite.ctx, acc1.GetAddress()) {
+		existingAcc := suite.accountKeeper.GetAccount(suite.ctx, acc1.GetAddress())
+		suite.accountKeeper.RemoveAccount(suite.ctx, existingAcc)
+	}
 
 	suite.accountKeeper.SetAccount(suite.ctx, acc1)
 	req := &types.QueryAccountAddressByIDRequest{AccountId: accNum}
@@ -228,6 +260,11 @@ func (suite *DeterministicTestSuite) TestGRPCQueryAccountInfo() {
 
 		req := &types.QueryAccountInfoRequest{Address: accs[0].GetAddress().String()}
 		testdata.DeterministicIterations(suite.ctx, suite.T(), req, suite.queryClient.AccountInfo, 0, true)
+
+		// Clean up accounts after test
+		for _, acc := range accs {
+			suite.accountKeeper.RemoveAccount(suite.ctx, acc)
+		}
 	})
 
 	// Regression test
@@ -235,6 +272,12 @@ func (suite *DeterministicTestSuite) TestGRPCQueryAccountInfo() {
 	seq := uint64(10)
 
 	acc := types.NewBaseAccount(addr, &secp256k1.PubKey{Key: pub}, accNum, seq)
+
+	// Check if account already exists and remove it to avoid conflicts
+	if suite.accountKeeper.HasAccount(suite.ctx, acc.GetAddress()) {
+		existingAcc := suite.accountKeeper.GetAccount(suite.ctx, acc.GetAddress())
+		suite.accountKeeper.RemoveAccount(suite.ctx, existingAcc)
+	}
 
 	suite.accountKeeper.SetAccount(suite.ctx, acc)
 	req := &types.QueryAccountInfoRequest{Address: acc.GetAddress().String()}
