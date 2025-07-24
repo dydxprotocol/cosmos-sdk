@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
       - name: Create a file with all core Cosmos SDK pkgs
         run: go list ./... > pkgs.txt
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -89,7 +89,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -120,7 +120,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -199,7 +199,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -229,7 +229,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: go.sum
@@ -262,7 +262,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: client/v2/go.sum
@@ -415,7 +415,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: simapp/go.sum
@@ -451,7 +451,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: collections/go.sum
@@ -513,7 +513,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: tools/cosmovisor/go.sum
@@ -544,7 +544,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: tools/confix/go.sum
@@ -575,7 +575,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: tools/hubl/go.sum
@@ -675,7 +675,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: x/tx/go.sum
@@ -706,7 +706,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: x/nft/go.sum
@@ -737,7 +737,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: x/circuit/go.sum
@@ -768,7 +768,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: x/feegrant/go.sum
@@ -799,7 +799,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: x/evidence/go.sum
@@ -829,7 +829,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
           check-latest: true
           cache: true
           cache-dependency-path: x/upgrade/go.sum
