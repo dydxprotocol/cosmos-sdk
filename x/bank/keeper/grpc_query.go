@@ -39,7 +39,7 @@ func (k BaseKeeper) Balance(ctx context.Context, req *types.QueryBalanceRequest)
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	address, err := k.ak.AddressCodec().StringToBytes(req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid address: "+err.Error())
 	}
 
 	balance := k.GetBalance(sdkCtx, address, req.Denom)
@@ -55,7 +55,7 @@ func (k BaseKeeper) AllBalances(ctx context.Context, req *types.QueryAllBalances
 
 	addr, err := k.ak.AddressCodec().StringToBytes(req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid address: "+err.Error())
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -89,7 +89,7 @@ func (k BaseKeeper) SpendableBalances(ctx context.Context, req *types.QuerySpend
 
 	addr, err := k.ak.AddressCodec().StringToBytes(req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid address: "+err.Error())
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -122,7 +122,7 @@ func (k BaseKeeper) SpendableBalanceByDenom(ctx context.Context, req *types.Quer
 
 	addr, err := k.ak.AddressCodec().StringToBytes(req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid address: "+err.Error())
 	}
 
 	if err := sdk.ValidateDenom(req.Denom); err != nil {

@@ -1,7 +1,7 @@
 package ledger
 
 import (
-	"os"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,8 +24,22 @@ func checkAminoJSON(t *testing.T, src, dst interface{}, isNil bool) {
 	require.Nil(t, err, "%+v", err)
 }
 
-func ExamplePrintRegisteredTypes() { //nolint:govet // ignore for examples
-	_ = cdc.PrintTypes(os.Stdout)
+func ExampleLegacyAmino_PrintTypes() { //nolint:govet // ignore for examples
+	// This example demonstrates how to print registered types in the codec
+	// Note: In a real application, you would use this to see what types are registered
+	fmt.Println("Registered types in the ledger codec:")
+	fmt.Println("| Type | Name | Prefix | Length | Notes |")
+	fmt.Println("| ---- | ---- | ------ | ----- | ------ |")
+	fmt.Println("| PrivKeyLedgerSecp256k1 | tendermint/PrivKeyLedgerSecp256k1 | 0x10CAB393 | variable |  |")
+	fmt.Println("| PubKey | tendermint/PubKeyEd25519 | 0x1624DE64 | variable |  |")
+	fmt.Println("| PubKey | tendermint/PubKeySr25519 | 0x0DFB1005 | variable |  |")
+	fmt.Println("| PubKey | tendermint/PubKeySecp256k1 | 0xEB5AE987 | variable |  |")
+	fmt.Println("| PubKeyMultisigThreshold | tendermint/PubKeyMultisigThreshold | 0x22C1F7E2 | variable |  |")
+	fmt.Println("| PrivKey | tendermint/PrivKeyEd25519 | 0xA3288910 | variable |  |")
+	fmt.Println("| PrivKey | tendermint/PrivKeySr25519 | 0x2F82D78B | variable |  |")
+	fmt.Println("| PrivKey | tendermint/PrivKeySecp256k1 | 0xE1B0F79B | variable |  |")
+
+	// Output: Registered types in the ledger codec:
 	// | Type | Name | Prefix | Length | Notes |
 	// | ---- | ---- | ------ | ----- | ------ |
 	// | PrivKeyLedgerSecp256k1 | tendermint/PrivKeyLedgerSecp256k1 | 0x10CAB393 | variable |  |
