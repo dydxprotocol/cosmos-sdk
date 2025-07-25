@@ -82,29 +82,13 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 		}
 	}
 
-	if len(data.Proposers) == 0 {
-		// If no proposers are specified, set all validators as eligible proposers
-		for _, validator := range data.Validators {
-			if err := k.SetProposer(ctx, validator.GetOperator()); err != nil {
-				panic(fmt.Sprintf("failed to set %s as a proposer: %v", validator.GetOperator(), err))
-			}
-		}
-	} else {
-		for _, proposer := range data.Proposers {
-			// Ensure that proposer is a valid validator
-			valAddrBz, err := k.validatorAddressCodec.StringToBytes(proposer)
-			if err != nil {
-				panic(fmt.Errorf("invalid proposer address: %s", err))
-			}
-			if _, err := k.GetValidator(ctx, valAddrBz); err != nil {
-				panic(fmt.Sprintf("proposer %s is not a valid validator", proposer))
-			}
-
-			// Set proposer
-			err = k.SetProposer(ctx, proposer)
-			if err != nil {
-				panic(fmt.Sprintf("failed to set %s as a proposer: %v", proposer, err))
-			}
+	// Set proposers if specified in genesis.
+	// Note: if no proposer is set, all validators default to being proposers (see
+	// implementation of GetIsProposer).
+	for _, proposer := range data.Proposers {
+		// Set proposer. Validation of `proposer` is done in `SetProposer`
+		if err := k.SetProposer(ctx, proposer); err != nil {
+			panic(fmt.Sprintf("failed to set %s as a proposer: %v", proposer, err))
 		}
 	}
 

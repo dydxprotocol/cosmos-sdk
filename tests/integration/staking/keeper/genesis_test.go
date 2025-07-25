@@ -132,20 +132,20 @@ func TestInitGenesis(t *testing.T) {
 
 	assert.DeepEqual(t, abcivals, vals)
 
-	// Verify all validators are proposers.
+	// Verify no proposers are set in state and thus all validators are eligible to propose.
 	proposers, err := f.stakingKeeper.GetAllProposers(f.sdkCtx)
 	assert.NilError(t, err)
-	assert.Equal(t, len(validators), len(proposers), "all validators should be proposers when none specified in genesis")
+	assert.Equal(t, 0, len(proposers), "no proposers should be set when none specified in genesis")
 
 	for _, val := range validators {
 		isProposer, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, val.OperatorAddress)
 		assert.NilError(t, err)
-		assert.Assert(t, isProposer, "validator %s should be a proposer", val.OperatorAddress)
+		assert.Assert(t, isProposer, "validator %s should be able to propose by default", val.OperatorAddress)
 	}
 
-	// Verify proposers in genesis export.
+	// Verify proposers in genesis export is empty.
 	exportedGenesis := f.stakingKeeper.ExportGenesis(f.sdkCtx)
-	assert.Equal(t, len(validators), len(exportedGenesis.Proposers), "exported genesis should contain all proposers")
+	assert.Equal(t, 0, len(exportedGenesis.Proposers), "proposers should be empty in genesis export")
 }
 
 func TestInitGenesisWithProposerSet(t *testing.T) {

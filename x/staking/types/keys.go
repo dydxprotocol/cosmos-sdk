@@ -57,7 +57,9 @@ var (
 
 	DelegationByValIndexKey = []byte{0x71} // key for delegations by a validator
 
-	ProposerKeyPrefix = []byte("Proposer:") // prefix for proposers (only a subset of validators can propose blocks)
+	// prefix for proposers
+	// Note: all validators default to being proposers if none is set with this prefix
+	ProposerKeyPrefix = []byte("P:")
 )
 
 // UnbondingType defines the type of unbonding operation
@@ -428,4 +430,13 @@ func GetHistoricalInfoKey(height int64) []byte {
 
 func GetProposerKey(operatorAddr sdk.ValAddress) []byte {
 	return append(ProposerKeyPrefix, address.MustLengthPrefix(operatorAddr)...)
+}
+
+// GetValOpAddrFromProposerKey extracts the validator operator address from a ProposerKey
+func GetValOpAddrFromProposerKey(key []byte) []byte {
+	// key is of format: ProposerKeyPrefix + len(addr) + addr
+	// Skip prefix to get length-prefixed address
+	addrBytesWithLen := key[len(ProposerKeyPrefix):]
+	addrLen := int(addrBytesWithLen[0])
+	return addrBytesWithLen[1 : 1+addrLen]
 }
