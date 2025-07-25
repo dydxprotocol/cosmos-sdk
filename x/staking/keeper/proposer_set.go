@@ -65,6 +65,7 @@ func (k Keeper) GetAllProposers(ctx context.Context) (proposers []string, err er
 	}
 	defer iterator.Close()
 
+	proposers = []string{}
 	for ; iterator.Valid(); iterator.Next() {
 		addrBytes := types.GetValOpAddrFromProposerKey(iterator.Key())
 		proposer, err := k.validatorAddressCodec.BytesToString(addrBytes)

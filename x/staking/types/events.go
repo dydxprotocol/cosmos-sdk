@@ -10,6 +10,7 @@ const (
 	EventTypeUnbond                    = "unbond"
 	EventTypeCancelUnbondingDelegation = "cancel_unbonding_delegation"
 	EventTypeRedelegate                = "redelegate"
+	EventTypeSetProposers              = "set_proposers"
 
 	AttributeKeyValidator         = "validator"
 	AttributeKeyCommissionRate    = "commission_rate"
@@ -20,4 +21,6 @@ const (
 	AttributeKeyCreationHeight    = "creation_height"
 	AttributeKeyCompletionTime    = "completion_time"
 	AttributeKeyNewShares         = "new_shares"
+	AttributeKeyAuthority         = "authority"
+	AttributeKeyProposerCount     = "proposer_count"
 )

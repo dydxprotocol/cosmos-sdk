@@ -11,6 +11,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
+	storetypes "cosmossdk.io/store/types"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
@@ -604,4 +605,82 @@ func (k msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 	}
 
 	return &types.MsgUpdateParamsResponse{}, nil
+}
+
+// SetProposers defines a method for setting which validators can propose blocks
+func (k msgServer) SetProposers(ctx context.Context, msg *types.MsgSetProposers) (*types.MsgSetProposersResponse, error) {
+	// Validate authority
+	if k.authority != msg.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
+	}
+
+	// Validate proposers is not empty
+	if len(msg.Proposers) == 0 {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "proposers list cannot be empty")
+	}
+
+	// Check for duplicate proposers and validate each address
+	seen := make(map[string]bool)
+	for _, proposerAddr := range msg.Proposers {
+		// Check for empty proposer address
+		if proposerAddr == "" {
+			return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "proposer address cannot be empty")
+		}
+
+		// Check for duplicate proposers
+		if seen[proposerAddr] {
+			return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "duplicate proposer address: %s", proposerAddr)
+		}
+		seen[proposerAddr] = true
+
+		// Validate proposer address format
+		valAddrBz, err := k.validatorAddressCodec.StringToBytes(proposerAddr)
+		if err != nil {
+			return nil, errorsmod.Wrapf(sdkerrors.ErrInvalidAddress, "invalid proposer address %s: %s", proposerAddr, err)
+		}
+
+		// Check if validator exists
+		if _, err := k.GetValidator(ctx, valAddrBz); err != nil {
+			return nil, errorsmod.Wrapf(types.ErrNoValidatorFound, "proposer %s is not a valid validator", proposerAddr)
+		}
+	}
+
+	// Clear existing proposers
+	store := k.storeService.OpenKVStore(ctx)
+	iter, err := store.Iterator(types.ProposerKeyPrefix, storetypes.PrefixEndBytes(types.ProposerKeyPrefix))
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+
+	// Collect keys to delete
+	var keysToDelete [][]byte
+	for ; iter.Valid(); iter.Next() {
+		keysToDelete = append(keysToDelete, iter.Key())
+	}
+
+	// Delete all existing proposer entries
+	for _, key := range keysToDelete {
+		if err := store.Delete(key); err != nil {
+			return nil, err
+		}
+	}
+
+	// Set new proposers
+	for _, proposerAddr := range msg.Proposers {
+		if err := k.SetProposer(ctx, proposerAddr); err != nil {
+			return nil, err
+		}
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeSetProposers,
+			sdk.NewAttribute(types.AttributeKeyAuthority, msg.Authority),
+			sdk.NewAttribute(types.AttributeKeyProposerCount, strconv.Itoa(len(msg.Proposers))),
+		),
+	)
+
+	return &types.MsgSetProposersResponse{}, nil
 }

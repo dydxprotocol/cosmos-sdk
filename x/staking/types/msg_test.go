@@ -49,3 +49,14 @@ func TestMsgDecode(t *testing.T) {
 	require.True(t, msg.Value.IsEqual(msg2.Value))
 	require.True(t, msg.Pubkey.Equal(msg2.Pubkey))
 }
+
+
+func TestNewMsgSetProposers(t *testing.T) {
+	authority := "cosmos1authority"
+	proposers := []string{"cosmosvaloper1proposer1", "cosmosvaloper1proposer2"}
+
+	msg := types.NewMsgSetProposers(authority, proposers)
+
+	require.Equal(t, authority, msg.Authority)
+	require.Equal(t, proposers, msg.Proposers)
+}

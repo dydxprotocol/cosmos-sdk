@@ -60,3 +60,57 @@ func (s *KeeperTestSuite) TestGRPCQueryValidator() {
 		})
 	}
 }
+
+func (s *KeeperTestSuite) TestGRPCQueryProposers() {
+	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+	require := s.Require()
+
+	// Create test validators
+	val1 := testutil.NewValidator(s.T(), sdk.ValAddress(PKs[0].Address().Bytes()), PKs[0])
+	val2 := testutil.NewValidator(s.T(), sdk.ValAddress(PKs[1].Address().Bytes()), PKs[1])
+	require.NoError(keeper.SetValidator(ctx, val1))
+	require.NoError(keeper.SetValidator(ctx, val2))
+
+	testCases := []struct {
+		name     string
+		setup    func()
+		expected []string
+	}{
+		{
+			name:     "no proposers set",
+			setup:    func() {},
+			expected: []string{},
+		},
+		{
+			name: "single proposer",
+			setup: func() {
+				require.NoError(keeper.SetProposer(ctx, val1.OperatorAddress))
+			},
+			expected: []string{val1.OperatorAddress},
+		},
+		{
+			name: "multiple proposers",
+			setup: func() {
+				require.NoError(keeper.SetProposer(ctx, val1.OperatorAddress))
+				require.NoError(keeper.SetProposer(ctx, val2.OperatorAddress))
+			},
+			expected: []string{val1.OperatorAddress, val2.OperatorAddress},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			tc.setup()
+			
+			res, err := queryClient.Proposers(gocontext.Background(), &types.QueryProposersRequest{})
+			require.NoError(err)
+			require.NotNil(res)
+			// Handle nil vs empty slice difference
+			if len(tc.expected) == 0 && res.Proposers == nil {
+				// Both are effectively empty
+				return
+			}
+			require.ElementsMatch(tc.expected, res.Proposers)
+		})
+	}
+}

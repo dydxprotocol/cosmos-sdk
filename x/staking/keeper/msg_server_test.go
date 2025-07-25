@@ -11,8 +11,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/staking/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -1122,6 +1124,189 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				require.Contains(err.Error(), tc.expErrMsg)
 			} else {
 				require.NoError(err)
+			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestMsgSetProposers() {
+	ctx, msgServer := s.ctx, s.msgServer
+	require := s.Require()
+	s.execExpectCalls()
+
+	// Create validators
+	pk1 := ed25519.GenPrivKey().PubKey()
+	pk2 := ed25519.GenPrivKey().PubKey()
+	pk3 := ed25519.GenPrivKey().PubKey()
+
+	validators := []struct {
+		addr sdk.ValAddress
+		pk   cryptotypes.PubKey
+	}{
+		{sdk.ValAddress(pk1.Address()), pk1},
+		{sdk.ValAddress(pk2.Address()), pk2},
+		{sdk.ValAddress(pk3.Address()), pk3},
+	}
+
+	var valOpAddrs []string
+	for _, val := range validators {
+		validator := testutil.NewValidator(s.T(), val.addr, val.pk)
+		validator.Status = stakingtypes.Bonded
+		validator.Tokens = math.NewInt(1000000)
+		validator.DelegatorShares = math.LegacyNewDecFromInt(validator.Tokens)
+		require.NoError(s.stakingKeeper.SetValidator(ctx, validator))
+
+		valOpAddrs = append(valOpAddrs, validator.OperatorAddress)
+	}
+
+	// Set validators 0 and 1 as proposers
+	require.NoError(s.stakingKeeper.SetProposer(ctx, valOpAddrs[0]))
+	require.NoError(s.stakingKeeper.SetProposer(ctx, valOpAddrs[1]))
+
+	testCases := []struct {
+		name      string
+		input     *stakingtypes.MsgSetProposers
+		setup     func()
+		expErr    bool
+		expErrMsg string
+		verify    func()
+	}{
+		{
+			name: "valid - 2 new proposers",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{valOpAddrs[1], valOpAddrs[2]},
+			},
+			expErr: false,
+			verify: func() {
+				// Check validators 1 and 2 are now proposers.
+				proposers, err := s.stakingKeeper.GetAllProposers(ctx)
+				require.NoError(err)
+				require.ElementsMatch(
+					[]string{valOpAddrs[1], valOpAddrs[2]},
+					proposers,
+				)
+
+				isProposer, err := s.stakingKeeper.GetIsProposer(ctx, valOpAddrs[0])
+				require.NoError(err)
+				require.False(isProposer)
+
+				isProposer, err = s.stakingKeeper.GetIsProposer(ctx, valOpAddrs[1])
+				require.NoError(err)
+				require.True(isProposer)
+
+				isProposer, err = s.stakingKeeper.GetIsProposer(ctx, valOpAddrs[2])
+				require.NoError(err)
+				require.True(isProposer)
+			},
+		},
+		{
+			name: "valid - set all validators as proposers",
+			setup: func() {
+				// Set all validators as proposers
+				require.NoError(s.stakingKeeper.SetProposer(ctx, valOpAddrs[0]))
+				require.NoError(s.stakingKeeper.SetProposer(ctx, valOpAddrs[1]))
+				require.NoError(s.stakingKeeper.SetProposer(ctx, valOpAddrs[2]))
+			},
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{valOpAddrs[0]},
+			},
+			expErr: false,
+			verify: func() {
+				// Only validator 0 should be proposer
+				proposers, err := s.stakingKeeper.GetAllProposers(ctx)
+				require.NoError(err)
+				require.ElementsMatch([]string{valOpAddrs[0]}, proposers)
+
+				isProposer, err := s.stakingKeeper.GetIsProposer(ctx, valOpAddrs[0])
+				require.NoError(err)
+				require.True(isProposer)
+
+				isProposer, err = s.stakingKeeper.GetIsProposer(ctx, valOpAddrs[1])
+				require.NoError(err)
+				require.False(isProposer)
+
+				isProposer, err = s.stakingKeeper.GetIsProposer(ctx, valOpAddrs[2])
+				require.NoError(err)
+				require.False(isProposer)
+			},
+		},
+		{
+			name: "invalid - empty proposer address",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{valOpAddrs[0], ""},
+			},
+			expErr:    true,
+			expErrMsg: "proposer address cannot be empty",
+		},
+		{
+			name: "invalid - wrong authority",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: "cosmos1invalid",
+				Proposers: []string{valOpAddrs[0]},
+			},
+			expErr:    true,
+			expErrMsg: "invalid authority",
+		},
+		{
+			name: "invalid - empty proposers",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{},
+			},
+			expErr:    true,
+			expErrMsg: "proposers list cannot be empty",
+		},
+		{
+			name: "invalid - duplicate proposers",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{valOpAddrs[0], valOpAddrs[0]},
+			},
+			expErr:    true,
+			expErrMsg: "duplicate proposer address",
+		},
+		{
+			name: "invalid - non-existent validator",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{sdk.ValAddress("nonexistent").String()},
+			},
+			expErr:    true,
+			expErrMsg: "is not a valid validator",
+		},
+		{
+			name: "invalid - malformed proposer address",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{"invalid-address"},
+			},
+			expErr:    true,
+			expErrMsg: "invalid proposer address",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			// Run setup if provided
+			if tc.setup != nil {
+				tc.setup()
+			}
+
+			// Execute message
+			_, err := msgServer.SetProposers(ctx, tc.input)
+
+			if tc.expErr {
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
+			} else {
+				require.NoError(err)
+				// Run verification
+				if tc.verify != nil {
+					tc.verify()
+				}
 			}
 		})
 	}

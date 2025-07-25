@@ -498,6 +498,15 @@ func (k Querier) Params(ctx context.Context, _ *types.QueryParamsRequest) (*type
 	return &types.QueryParamsResponse{Params: params}, nil
 }
 
+// Proposers queries the current set of validators eligible to propose blocks
+func (k Querier) Proposers(ctx context.Context, _ *types.QueryProposersRequest) (*types.QueryProposersResponse, error) {
+	proposers, err := k.GetAllProposers(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &types.QueryProposersResponse{Proposers: proposers}, nil
+}
+
 func queryRedelegation(ctx context.Context, k Querier, req *types.QueryRedelegationsRequest) (redels types.Redelegations, err error) {
 	delAddr, err := k.authKeeper.AddressCodec().StringToBytes(req.DelegatorAddr)
 	if err != nil {

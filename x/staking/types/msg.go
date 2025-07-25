@@ -20,6 +20,7 @@ var (
 	_ sdk.Msg                            = &MsgBeginRedelegate{}
 	_ sdk.Msg                            = &MsgCancelUnbondingDelegation{}
 	_ sdk.Msg                            = &MsgUpdateParams{}
+	_ sdk.Msg                            = &MsgSetProposers{}
 )
 
 // NewMsgCreateValidator creates a new MsgCreateValidator instance.
@@ -142,3 +143,12 @@ func NewMsgCancelUnbondingDelegation(delAddr, valAddr string, creationHeight int
 		CreationHeight:   creationHeight,
 	}
 }
+
+// NewMsgSetProposers creates a new MsgSetProposers instance.
+func NewMsgSetProposers(authority string, proposers []string) *MsgSetProposers {
+	return &MsgSetProposers{
+		Authority: authority,
+		Proposers: proposers,
+	}
+}
+

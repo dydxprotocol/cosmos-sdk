@@ -45,6 +45,9 @@ service Msg {
   // parameters.
   // Since: cosmos-sdk 0.47
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // SetProposers defines a governance operation for setting which validators can propose blocks.
+  rpc SetProposers(MsgSetProposers) returns (MsgSetProposersResponse);
 }
 
 // MsgCreateValidator defines a SDK message for creating a new validator.
@@ -204,3 +207,19 @@ message MsgUpdateParams {
 //
 // Since: cosmos-sdk 0.47
 message MsgUpdateParamsResponse {};
+
+// MsgSetProposers defines a governance message for setting which validators can propose blocks.
+message MsgSetProposers {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/staking/MsgSetProposers";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // proposers is the list of operator addresses of validators who are eligible to propose blocks.
+  repeated string proposers = 2;
+}
+
+// MsgSetProposersResponse defines the response structure for executing a
+// MsgSetProposers message.
+message MsgSetProposersResponse {};
