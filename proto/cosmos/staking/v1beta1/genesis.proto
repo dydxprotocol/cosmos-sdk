@@ -42,6 +42,7 @@ message GenesisState {
   bool exported = 8;
 
   // proposers defines the set of validators (by operator addresses) that are eligible to propose blocks.
+  // if empty, all validators should default to being proposers.
   repeated string proposers = 9
       [(gogoproto.nullable) = false, (amino.dont_omitempty) = true, (cosmos_proto.scalar) = "cosmos.AddressString"];
 }

@@ -1890,6 +1890,7 @@ type GenesisState struct {
 	// exported defines a bool to identify whether the chain dealing with exported or initialized genesis.
 	Exported bool `protobuf:"varint,8,opt,name=exported,proto3" json:"exported,omitempty"`
 	// proposers defines the set of validators (by operator addresses) that are eligible to propose blocks.
+	// if empty, all validators should default to being proposers.
 	Proposers []string `protobuf:"bytes,9,rep,name=proposers,proto3" json:"proposers,omitempty"`
 }
 

@@ -10,113 +10,94 @@ func (s *KeeperTestSuite) TestGetSetProposers() {
 	ctx, keeper := s.ctx, s.stakingKeeper
 	require := s.Require()
 
-	// GetAllProposers should return empty initially.
-	proposers, err := keeper.GetAllProposers(ctx)
+	// Proposer set should be empty by default
+	proposers, err := keeper.GetProposers(ctx)
 	require.NoError(err)
 	require.Empty(proposers)
 
-	// Create and set bonded validators.
-	numValidators := 3
-	validators := make([]string, numValidators)
-	for i := 0; i < numValidators; i++ {
+	// Create three bonded validators and one unbonding validator
+	validators := make([]string, 4)
+	for i := 0; i < 4; i++ {
 		valPubKey := PKs[i]
 		valAddr := sdk.ValAddress(valPubKey.Address().Bytes())
 		validator := testutil.NewValidator(s.T(), valAddr, valPubKey)
-		validator.Status = types.Bonded
+		if i == 3 {
+			validator.Status = types.Unbonding
+		} else {
+			validator.Status = types.Bonded
+		}
 		validators[i] = validator.OperatorAddress
 		err := keeper.SetValidator(ctx, validator)
 		require.NoError(err)
 	}
 
-	// When no proposers are set, all validators are eligible to propose.
-	for i := 0; i < numValidators; i++ {
-		isProposer, err := keeper.GetIsProposer(ctx, validators[i])
-		require.NoError(err)
-		require.True(isProposer, "validator %d should default to true when no proposers are set", i)
-	}
-
-	// Set the first validator as a proposer.
-	err = keeper.SetProposer(ctx, validators[0])
+	// Set the first validator as a proposer and verify
+	err = keeper.SetProposers(ctx, validators[:1])
 	require.NoError(err)
 
-	// Verify first is proposer and rest are not.
-	for i := 0; i < numValidators; i++ {
-		isProposer, err := keeper.GetIsProposer(ctx, validators[i])
-		require.NoError(err)
-		if i == 0 {
-			require.True(isProposer, "validator %d should be a proposer", i)
-		} else {
-			require.False(isProposer, "validator %d should not be a proposer", i)
-		}
-	}
-
-	// Set all validators as proposers.
-	for i := 1; i < numValidators; i++ {
-		err = keeper.SetProposer(ctx, validators[i])
-		require.NoError(err)
-	}
-
-	// Verify all validators are proposers.
-	for i := 0; i < numValidators; i++ {
-		isProposer, err := keeper.GetIsProposer(ctx, validators[i])
-		require.NoError(err)
-		require.True(isProposer, "validator %d should be a proposer", i)
-	}
-
-	proposers, err = keeper.GetAllProposers(ctx)
+	proposers, err = keeper.GetProposers(ctx)
 	require.NoError(err)
-	require.Len(proposers, numValidators)
+	require.Equal(validators[:1], proposers)
 
-	proposerMap := make(map[string]bool)
-	for _, p := range proposers {
-		proposerMap[p] = true
-	}
-	for _, expected := range validators {
-		require.True(proposerMap[expected], "expected proposer %s not found", expected)
-	}
+	// Set last two validators as proposers and verify
+	// Should succeed as there's at least one bonded proposer
+	err = keeper.SetProposers(ctx, validators[2:])
+	require.NoError(err)
 
+	proposers, err = keeper.GetProposers(ctx)
+	require.NoError(err)
+	require.Equal(validators[2:], proposers)
+
+	// Set all validators as proposers and verify
+	// Should succeed as there's at least one bonded proposer
+	err = keeper.SetProposers(ctx, validators)
+	require.NoError(err)
+
+	proposers, err = keeper.GetProposers(ctx)
+	require.NoError(err)
+	require.ElementsMatch(validators, proposers)
+
+	// Set proposer set back to empty and verify
+	err = keeper.SetProposers(ctx, []string{})
+	require.NoError(err)
+
+	proposers, err = keeper.GetProposers(ctx)
+	require.NoError(err)
+	require.Empty(proposers)
 }
 
-func (s *KeeperTestSuite) TestGetSetProposersErrors() {
+func (s *KeeperTestSuite) TestSetProposersErrors() {
 	ctx, keeper := s.ctx, s.stakingKeeper
 	require := s.Require()
-
-	// GetIsProposer and SetProposer should return error given invalid addresses
-	_, err := keeper.GetIsProposer(ctx, "invalid-address")
-	require.Error(err, "GetIsProposer with invalid address should return error")
-
-	err = keeper.SetProposer(ctx, "invalid-address")
-	require.Error(err, "SetProposer with invalid address should return error")
 
 	// Create a validator
 	valPubKey := PKs[0]
 	valAddr := sdk.ValAddress(valPubKey.Address().Bytes())
 	validator := testutil.NewValidator(s.T(), valAddr, valPubKey)
 
-	// SetProposer should return error for non-existent validators
+	// Should return error given invalid addresses
+	err := keeper.SetProposers(ctx, []string{"invalid-address"})
+	require.Error(err, "SetProposers with invalid address should return error")
+
+	// Should return error for non-operator addresses (e.g. account and consensus addresses)
+	accAddr := sdk.AccAddress(valAddr)
+	err = keeper.SetProposers(ctx, []string{accAddr.String()})
+	require.ErrorContains(err, "does not match bech32 prefix: expected 'cosmosvaloper'")
+
+	consAddr := sdk.ConsAddress(valAddr)
+	err = keeper.SetProposers(ctx, []string{consAddr.String()})
+	require.ErrorContains(err, "does not match bech32 prefix: expected 'cosmosvaloper'")
+
+	// Should return error for non-existent validators
 	nonExistentPubKey := PKs[1]
 	nonExistentValAddr := sdk.ValAddress(nonExistentPubKey.Address().Bytes())
-	err = keeper.SetProposer(ctx, nonExistentValAddr.String())
-	require.Error(err)
-	require.Contains(err.Error(), "validator does not exist")
+	err = keeper.SetProposers(ctx, []string{nonExistentValAddr.String()})
+	require.ErrorContains(err, "validator does not exist")
 
-	// SetProposer should return error for unbonded validators
+	// Should return error if no proposer is bonded.
 	validator.Status = types.Unbonded
 	err = keeper.SetValidator(ctx, validator)
 	require.NoError(err)
-	err = keeper.SetProposer(ctx, validator.OperatorAddress)
-	require.Error(err)
-	require.Contains(err.Error(), "is not bonded")
-
-	// SetProposer should return error for non-operator addresses of bonded validators
-	// such as account and consensus addresses
-	accAddr := sdk.AccAddress(valAddr)
-	err = keeper.SetProposer(ctx, accAddr.String())
-	require.Error(err)
-	require.Contains(err.Error(), "does not match bech32 prefix: expected 'cosmosvaloper'")
-
-	consAddr := sdk.ConsAddress(valAddr)
-	err = keeper.SetProposer(ctx, consAddr.String())
-	require.Error(err)
-	require.Contains(err.Error(), "does not match bech32 prefix: expected 'cosmosvaloper'")
+	err = keeper.SetProposers(ctx, []string{validator.OperatorAddress})
+	require.ErrorContains(err, "at least one proposer must be bonded")
 }

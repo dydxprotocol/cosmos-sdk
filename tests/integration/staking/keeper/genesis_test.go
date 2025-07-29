@@ -132,20 +132,14 @@ func TestInitGenesis(t *testing.T) {
 
 	assert.DeepEqual(t, abcivals, vals)
 
-	// Verify no proposers are set in state and thus all validators are eligible to propose.
-	proposers, err := f.stakingKeeper.GetAllProposers(f.sdkCtx)
+	// Verify no proposers are set in state.
+	proposers, err := f.stakingKeeper.GetProposers(f.sdkCtx)
 	assert.NilError(t, err)
-	assert.Equal(t, 0, len(proposers), "no proposers should be set when none specified in genesis")
+	assert.Equal(t, 0, len(proposers))
 
-	for _, val := range validators {
-		isProposer, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, val.OperatorAddress)
-		assert.NilError(t, err)
-		assert.Assert(t, isProposer, "validator %s should be able to propose by default", val.OperatorAddress)
-	}
-
-	// Verify proposers in genesis export is empty.
+	// Verify proposers in genesis export is also empty.
 	exportedGenesis := f.stakingKeeper.ExportGenesis(f.sdkCtx)
-	assert.Equal(t, 0, len(exportedGenesis.Proposers), "proposers should be empty in genesis export")
+	assert.Equal(t, 0, len(exportedGenesis.Proposers))
 }
 
 func TestInitGenesisWithProposerSet(t *testing.T) {
@@ -189,8 +183,8 @@ func TestInitGenesisWithProposerSet(t *testing.T) {
 	// Init genesis
 	f.stakingKeeper.InitGenesis(f.sdkCtx, genesisState)
 
-	// Verify proposer set
-	actualProposers, err := f.stakingKeeper.GetAllProposers(f.sdkCtx)
+	// Verify proposer set in state.
+	actualProposers, err := f.stakingKeeper.GetProposers(f.sdkCtx)
 	assert.NilError(t, err)
 	assert.DeepEqual(
 		t,
@@ -198,17 +192,13 @@ func TestInitGenesisWithProposerSet(t *testing.T) {
 		actualProposers,
 	)
 
-	isProposer0, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, validators[0].OperatorAddress)
-	assert.NilError(t, err)
-	assert.Assert(t, isProposer0)
-
-	isProposer1, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, validators[1].OperatorAddress)
-	assert.NilError(t, err)
-	assert.Assert(t, isProposer1)
-
-	isProposer2, err := f.stakingKeeper.GetIsProposer(f.sdkCtx, validators[2].OperatorAddress)
-	assert.NilError(t, err)
-	assert.Assert(t, !isProposer2)
+	// Verify proposer set in genesis export
+	exportedGenesis := f.stakingKeeper.ExportGenesis(f.sdkCtx)
+	assert.DeepEqual(
+		t,
+		[]string{validators[0].OperatorAddress, validators[1].OperatorAddress},
+		exportedGenesis.Proposers,
+	)
 }
 
 func TestInitGenesis_PoolsBalanceMismatch(t *testing.T) {

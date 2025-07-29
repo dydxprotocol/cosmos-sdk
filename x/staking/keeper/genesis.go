@@ -83,12 +83,10 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 	}
 
 	// Set proposers if specified in genesis.
-	// Note: if no proposer is set, all validators default to being proposers (see
-	// implementation of GetIsProposer).
-	for _, proposer := range data.Proposers {
-		// Set proposer. Validation of `proposer` is done in `SetProposer`
-		if err := k.SetProposer(ctx, proposer); err != nil {
-			panic(fmt.Sprintf("failed to set %s as a proposer: %v", proposer, err))
+	// Note: if no proposer is set, all validators default to being proposers.
+	if len(data.Proposers) > 0 {
+		if err := k.SetProposers(ctx, data.Proposers); err != nil {
+			panic(fmt.Sprintf("failed to set proposers from genesis: %v", err))
 		}
 	}
 
@@ -276,7 +274,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	allProposers, err := k.GetAllProposers(ctx)
+	proposers, err := k.GetProposers(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -290,6 +288,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		UnbondingDelegations: unbondingDelegations,
 		Redelegations:        redelegations,
 		Exported:             true,
-		Proposers:            allProposers,
+		Proposers:            proposers,
 	}
 }
