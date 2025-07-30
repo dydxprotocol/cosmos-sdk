@@ -15,13 +15,13 @@ func (s *KeeperTestSuite) TestGetSetProposers() {
 	require.NoError(err)
 	require.Empty(proposers)
 
-	// Create three bonded validators and one unbonding validator
-	validators := make([]string, 4)
-	for i := 0; i < 4; i++ {
+	// Create six validators: 5 bonded and 1 unbonding
+	validators := make([]string, 6)
+	for i := 0; i < 6; i++ {
 		valPubKey := PKs[i]
 		valAddr := sdk.ValAddress(valPubKey.Address().Bytes())
 		validator := testutil.NewValidator(s.T(), valAddr, valPubKey)
-		if i == 3 {
+		if i == 5 {
 			validator.Status = types.Unbonding
 		} else {
 			validator.Status = types.Bonded
@@ -31,25 +31,21 @@ func (s *KeeperTestSuite) TestGetSetProposers() {
 		require.NoError(err)
 	}
 
-	// Set the first validator as a proposer and verify
-	err = keeper.SetProposers(ctx, validators[:1])
+	// Set first 5 validators as proposers and verify
+	err = keeper.SetProposers(ctx, validators[:5])
 	require.NoError(err)
 
 	proposers, err = keeper.GetProposers(ctx)
 	require.NoError(err)
-	require.Equal(validators[:1], proposers)
+	require.Equal(validators[:5], proposers)
 
-	// Set last two validators as proposers and verify
-	// Should succeed as there's at least one bonded proposer
-	err = keeper.SetProposers(ctx, validators[2:])
-	require.NoError(err)
-
-	proposers, err = keeper.GetProposers(ctx)
-	require.NoError(err)
-	require.Equal(validators[2:], proposers)
+	// Set last 5 validators as proposers
+	// Should fail as there are insufficient bonded proposers
+	err = keeper.SetProposers(ctx, validators[1:])
+	require.Error(err)
+	require.ErrorContains(err, "proposer set only has 4 bonded validators, less than the required 5")
 
 	// Set all validators as proposers and verify
-	// Should succeed as there's at least one bonded proposer
 	err = keeper.SetProposers(ctx, validators)
 	require.NoError(err)
 
@@ -74,9 +70,11 @@ func (s *KeeperTestSuite) TestSetProposersErrors() {
 	valPubKey := PKs[0]
 	valAddr := sdk.ValAddress(valPubKey.Address().Bytes())
 	validator := testutil.NewValidator(s.T(), valAddr, valPubKey)
+	err := keeper.SetValidator(ctx, validator)
+	require.NoError(err)
 
 	// Should return error given invalid addresses
-	err := keeper.SetProposers(ctx, []string{"invalid-address"})
+	err = keeper.SetProposers(ctx, []string{"invalid-address"})
 	require.Error(err, "SetProposers with invalid address should return error")
 
 	// Should return error for non-operator addresses (e.g. account and consensus addresses)
@@ -93,11 +91,4 @@ func (s *KeeperTestSuite) TestSetProposersErrors() {
 	nonExistentValAddr := sdk.ValAddress(nonExistentPubKey.Address().Bytes())
 	err = keeper.SetProposers(ctx, []string{nonExistentValAddr.String()})
 	require.ErrorContains(err, "validator does not exist")
-
-	// Should return error if no proposer is bonded.
-	validator.Status = types.Unbonded
-	err = keeper.SetValidator(ctx, validator)
-	require.NoError(err)
-	err = keeper.SetProposers(ctx, []string{validator.OperatorAddress})
-	require.ErrorContains(err, "at least one proposer must be bonded")
 }

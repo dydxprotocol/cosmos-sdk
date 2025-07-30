@@ -3,9 +3,14 @@ package keeper
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
+)
+
+const (
+	// minimum number of bonded validators required in a proposer set
+	MIN_BONDED_IN_PROPOSER_SET = 5
 )
 
 // GetProposers returns all proposers by their operator addresses.
@@ -49,12 +54,13 @@ func (k Keeper) SetProposers(ctx context.Context, proposers []string) error {
 // checkProposerSetInvariant validates invariants of a proposer set, which are:
 // - all proposers are valid operator addresses
 // - all proposers correspond to existing validators
-// - at least one proposer is bonded
+// - at least MIN_BONDED_IN_PROPOSER_SET proposers are bonded
 func (k Keeper) checkProposerSetInvariants(ctx context.Context, proposers []string) error {
 	if len(proposers) == 0 {
 		return nil // Valid as x/staking will default to all validators being proposers.
 	}
 
+	bonded := 0
 	for _, proposerAddr := range proposers {
 		operatorAddr, err := k.validatorAddressCodec.StringToBytes(proposerAddr)
 		if err != nil {
@@ -65,10 +71,17 @@ func (k Keeper) checkProposerSetInvariants(ctx context.Context, proposers []stri
 		if err != nil {
 			return err
 		}
+
 		if validator.Status == types.Bonded {
-			return nil
+			bonded++
 		}
 	}
 
-	return fmt.Errorf("at least one proposer must be bonded")
+	if bonded < MIN_BONDED_IN_PROPOSER_SET {
+		return errorsmod.Wrapf(types.ErrInsufficientBondedValidators,
+			"proposer set only has %d bonded validators, less than the required %d",
+			bonded, MIN_BONDED_IN_PROPOSER_SET)
+	}
+
+	return nil
 }

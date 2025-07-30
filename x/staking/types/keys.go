@@ -59,7 +59,7 @@ var (
 
 	// key for proposer set
 	// Note: all validators default to being proposers if proposer set is empty
-	ProposerSetKey = []byte("ProposerSet")
+	ProposerSetKey = []byte("PS")
 )
 
 // UnbondingType defines the type of unbonding operation

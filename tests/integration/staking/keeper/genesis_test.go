@@ -143,10 +143,10 @@ func TestInitGenesis(t *testing.T) {
 }
 
 func TestInitGenesisWithProposerSet(t *testing.T) {
-	f, addrs := bootstrapGenesisTest(t, 3)
+	f, addrs := bootstrapGenesisTest(t, 6)
 
-	validators := make([]types.Validator, 3)
-	for i := 0; i < 3; i++ {
+	validators := make([]types.Validator, 6)
+	for i := 0; i < 6; i++ {
 		pk, err := codectypes.NewAnyWithValue(PKs[i])
 		assert.NilError(t, err)
 
@@ -162,8 +162,11 @@ func TestInitGenesisWithProposerSet(t *testing.T) {
 	params := types.DefaultParams()
 	params.BondDenom = sdk.DefaultBondDenom
 
-	// Set only first two validators as proposers
-	proposers := []string{validators[0].OperatorAddress, validators[1].OperatorAddress}
+	// Set first 5 validators as proposers (meets MIN_BONDED_IN_PROPOSER_SET requirement)
+	proposers := make([]string, 5)
+	for i := 0; i < 5; i++ {
+		proposers[i] = validators[i].OperatorAddress
+	}
 	genesisState := &types.GenesisState{
 		Params:     params,
 		Validators: validators,
@@ -176,7 +179,7 @@ func TestInitGenesisWithProposerSet(t *testing.T) {
 			f.sdkCtx,
 			f.bankKeeper,
 			types.BondedPoolName,
-			sdk.NewCoins(sdk.NewCoin(params.BondDenom, math.NewInt(300))),
+			sdk.NewCoins(sdk.NewCoin(params.BondDenom, math.NewInt(600))),
 		),
 	)
 
@@ -186,19 +189,11 @@ func TestInitGenesisWithProposerSet(t *testing.T) {
 	// Verify proposer set in state.
 	actualProposers, err := f.stakingKeeper.GetProposers(f.sdkCtx)
 	assert.NilError(t, err)
-	assert.DeepEqual(
-		t,
-		[]string{validators[0].OperatorAddress, validators[1].OperatorAddress},
-		actualProposers,
-	)
+	assert.DeepEqual(t, proposers, actualProposers)
 
 	// Verify proposer set in genesis export
 	exportedGenesis := f.stakingKeeper.ExportGenesis(f.sdkCtx)
-	assert.DeepEqual(
-		t,
-		[]string{validators[0].OperatorAddress, validators[1].OperatorAddress},
-		exportedGenesis.Proposers,
-	)
+	assert.DeepEqual(t, proposers, exportedGenesis.Proposers)
 }
 
 func TestInitGenesis_PoolsBalanceMismatch(t *testing.T) {
