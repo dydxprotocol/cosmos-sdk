@@ -82,6 +82,14 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 		}
 	}
 
+	// Set proposers if specified in genesis.
+	// Note: if no proposer is set, all validators default to being proposers.
+	if len(data.Proposers) > 0 {
+		if err := k.SetProposers(ctx, data.Proposers); err != nil {
+			panic(fmt.Sprintf("failed to set proposers from genesis: %v", err))
+		}
+	}
+
 	for _, delegation := range data.Delegations {
 		delegatorAddress, err := k.authKeeper.AddressCodec().StringToBytes(delegation.DelegatorAddress)
 		if err != nil {
@@ -266,6 +274,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
+	proposers, err := k.GetProposers(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	return &types.GenesisState{
 		Params:               params,
 		LastTotalPower:       totalPower,
@@ -275,5 +288,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		UnbondingDelegations: unbondingDelegations,
 		Redelegations:        redelegations,
 		Exported:             true,
+		Proposers:            proposers,
 	}
 }
