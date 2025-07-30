@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	// minimum number of bonded validators required in a proposer set
-	MIN_BONDED_IN_PROPOSER_SET = 5
+	// MinBondedInProposerSet is the minimum number of bonded validators required in a proposer set
+	MinBondedInProposerSet = 5
 )
 
 // GetProposers returns all proposers by their operator addresses.
@@ -51,10 +51,10 @@ func (k Keeper) SetProposers(ctx context.Context, proposers []string) error {
 	return store.Set(types.ProposerSetKey, bz)
 }
 
-// checkProposerSetInvariant validates invariants of a proposer set, which are:
+// checkProposerSetInvariants validates invariants of a proposer set, which are:
 // - all proposers are valid operator addresses
 // - all proposers correspond to existing validators
-// - at least MIN_BONDED_IN_PROPOSER_SET proposers are bonded
+// - at least MinBondedInProposerSet proposers are bonded
 func (k Keeper) checkProposerSetInvariants(ctx context.Context, proposers []string) error {
 	if len(proposers) == 0 {
 		return nil // Valid as x/staking will default to all validators being proposers.
@@ -77,10 +77,10 @@ func (k Keeper) checkProposerSetInvariants(ctx context.Context, proposers []stri
 		}
 	}
 
-	if bonded < MIN_BONDED_IN_PROPOSER_SET {
-		return errorsmod.Wrapf(types.ErrInsufficientBondedValidators,
+	if bonded < MinBondedInProposerSet {
+		return errorsmod.Wrapf(types.ErrTooFewBondedProposers,
 			"proposer set only has %d bonded validators, less than the required %d",
-			bonded, MIN_BONDED_IN_PROPOSER_SET)
+			bonded, MinBondedInProposerSet)
 	}
 
 	return nil
