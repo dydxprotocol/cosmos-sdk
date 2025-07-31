@@ -614,6 +614,7 @@ func (k msgServer) SetProposers(ctx context.Context, msg *types.MsgSetProposers)
 	}
 
 	// Set proposers in state
+	// Not that invariant checks of a proposer set are done in keeper method `SetProposers`
 	if err := k.Keeper.SetProposers(ctx, msg.Proposers); err != nil {
 		return nil, err
 	}
