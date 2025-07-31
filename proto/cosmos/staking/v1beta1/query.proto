@@ -128,6 +128,12 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get               = "/cosmos/staking/v1beta1/params";
   }
+
+  // Proposers queries the set of validators eligible to propose blocks.
+  rpc Proposers(QueryProposersRequest) returns (QueryProposersResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get               = "/cosmos/staking/v1beta1/proposers";
+  }
 }
 
 // QueryValidatorsRequest is request type for Query/Validators RPC method.
@@ -384,4 +390,13 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params holds all the parameters of this module.
   Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryProposersRequest is request type for the Query/Proposers RPC method.
+message QueryProposersRequest {}
+
+// QueryProposersResponse is response type for the Query/Proposers RPC method.
+message QueryProposersResponse {
+  // proposers is the list of operator addresses of validators eligible to propose blocks.
+  repeated string proposers = 1;
 }

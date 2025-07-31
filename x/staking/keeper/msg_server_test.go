@@ -11,8 +11,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/staking/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -1122,6 +1124,162 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				require.Contains(err.Error(), tc.expErrMsg)
 			} else {
 				require.NoError(err)
+			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestMsgSetProposers() {
+	ctx, msgServer := s.ctx, s.msgServer
+	require := s.Require()
+	s.execExpectCalls()
+
+	// Create 6 validators: 5 bonded + 1 unbonded
+	validators := make([]struct {
+		addr   sdk.ValAddress
+		pk     cryptotypes.PubKey
+		status stakingtypes.BondStatus
+	}, 6)
+
+	for i := 0; i < 6; i++ {
+		pk := ed25519.GenPrivKey().PubKey()
+		validators[i] = struct {
+			addr   sdk.ValAddress
+			pk     cryptotypes.PubKey
+			status stakingtypes.BondStatus
+		}{
+			addr:   sdk.ValAddress(pk.Address()),
+			pk:     pk,
+			status: stakingtypes.Bonded,
+		}
+	}
+	validators[5].status = stakingtypes.Unbonded
+
+	var valOpAddrs []string
+	for _, val := range validators {
+		validator := testutil.NewValidator(s.T(), val.addr, val.pk)
+		validator.Status = val.status
+		validator.Tokens = math.NewInt(1000000)
+		validator.DelegatorShares = math.LegacyNewDecFromInt(validator.Tokens)
+		require.NoError(s.stakingKeeper.SetValidator(ctx, validator))
+
+		valOpAddrs = append(valOpAddrs, validator.OperatorAddress)
+	}
+
+	testCases := []struct {
+		name      string
+		input     *stakingtypes.MsgSetProposers
+		setup     func()
+		expErr    bool
+		expErrMsg string
+		verify    func()
+	}{
+		{
+			name: "valid - 5 bonded",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: valOpAddrs[:5],
+			},
+			expErr: false,
+			verify: func() {
+				// Check first 5 validators are proposers
+				proposers, err := s.stakingKeeper.GetProposers(ctx)
+				require.NoError(err)
+				require.ElementsMatch(valOpAddrs[:5], proposers)
+			},
+		},
+		{
+			name: "valid - 5 bonded and 1 unbonded",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: valOpAddrs, // All 6 validators (5 bonded + 1 unbonded)
+			},
+			expErr: false,
+			verify: func() {
+				// All validators should be proposers
+				proposers, err := s.stakingKeeper.GetProposers(ctx)
+				require.NoError(err)
+				require.ElementsMatch(valOpAddrs, proposers)
+			},
+		},
+		{
+			name: "valid - empty",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{},
+			},
+			expErr: false,
+			verify: func() {
+				proposers, err := s.stakingKeeper.GetProposers(ctx)
+				require.NoError(err)
+				require.Empty(proposers)
+			},
+		},
+		{
+			name: "invalid - empty proposer address",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{valOpAddrs[0], ""},
+			},
+			expErr:    true,
+			expErrMsg: "empty address string is not allowed",
+		},
+		{
+			name: "invalid - wrong authority",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: "cosmos1invalid",
+				Proposers: []string{valOpAddrs[0]},
+			},
+			expErr:    true,
+			expErrMsg: "invalid authority",
+		},
+		{
+			name: "invalid - non-existent validator",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{sdk.ValAddress("nonexistent").String()},
+			},
+			expErr:    true,
+			expErrMsg: "validator does not exist",
+		},
+		{
+			name: "invalid - malformed proposer address",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: []string{"invalid-address"},
+			},
+			expErr:    true,
+			expErrMsg: "decoding bech32 failed",
+		},
+		{
+			name: "invalid - too few bonded validators",
+			input: &stakingtypes.MsgSetProposers{
+				Authority: s.stakingKeeper.GetAuthority(),
+				Proposers: valOpAddrs[1:],
+			},
+			expErr:    true,
+			expErrMsg: "proposer set only has 4 bonded validators, less than the required 5",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			if tc.setup != nil {
+				tc.setup()
+			}
+
+			// Execute message
+			_, err := msgServer.SetProposers(ctx, tc.input)
+
+			if tc.expErr {
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
+			} else {
+				require.NoError(err)
+
+				if tc.verify != nil {
+					tc.verify()
+				}
 			}
 		})
 	}

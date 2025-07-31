@@ -138,6 +138,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Long:      "Query values set as staking parameters.",
 				},
 			},
+			EnhanceCustomCommand: true, // enable custom commands such as Proposers() query
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
 			Service: stakingv1beta.Msg_ServiceDesc.ServiceName,

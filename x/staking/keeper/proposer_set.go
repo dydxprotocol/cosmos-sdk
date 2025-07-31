@@ -23,11 +23,11 @@ func (k Keeper) GetProposers(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
+	var proposers []string
 	if bz == nil {
-		return []string{}, nil
+		return proposers, nil
 	}
 
-	var proposers []string
 	if err := json.Unmarshal(bz, &proposers); err != nil {
 		return nil, err
 	}
