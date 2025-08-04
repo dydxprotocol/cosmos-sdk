@@ -813,7 +813,11 @@ func (m *Manager) EndBlock(ctx sdk.Context) (sdk.EndBlock, error) {
 				}
 
 				for _, updates := range moduleValUpdates {
-					validatorUpdates = append(validatorUpdates, abci.ValidatorUpdate{PubKey: updates.PubKey, Power: updates.Power})
+					validatorUpdates = append(validatorUpdates, abci.ValidatorUpdate{
+						PubKey:     updates.PubKey,
+						Power:      updates.Power,
+						CanPropose: updates.CanPropose,
+					})
 				}
 			}
 		} else {

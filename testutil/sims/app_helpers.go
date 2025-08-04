@@ -59,7 +59,7 @@ func CreateRandomValidatorSet() (*cmttypes.ValidatorSet, error) {
 	}
 
 	// create validator set with single validator
-	validator := cmttypes.NewValidator(pubKey, 1)
+	validator := cmttypes.NewValidator(pubKey, 1, true)
 
 	return cmttypes.NewValidatorSet([]*cmttypes.Validator{validator}), nil
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/staking/testutil"
@@ -1135,89 +1134,61 @@ func (s *KeeperTestSuite) TestMsgSetProposers() {
 	s.execExpectCalls()
 
 	// Create 6 validators: 5 bonded + 1 unbonded
-	validators := make([]struct {
-		addr   sdk.ValAddress
-		pk     cryptotypes.PubKey
-		status stakingtypes.BondStatus
-	}, 6)
-
+	s.bankKeeper.EXPECT().SendCoinsFromModuleToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	var valOpAddrs []string
 	for i := 0; i < 6; i++ {
 		pk := ed25519.GenPrivKey().PubKey()
-		validators[i] = struct {
-			addr   sdk.ValAddress
-			pk     cryptotypes.PubKey
-			status stakingtypes.BondStatus
-		}{
-			addr:   sdk.ValAddress(pk.Address()),
-			pk:     pk,
-			status: stakingtypes.Bonded,
-		}
-	}
-	validators[5].status = stakingtypes.Unbonded
+		addr := sdk.ValAddress(pk.Address())
 
-	var valOpAddrs []string
-	for _, val := range validators {
-		validator := testutil.NewValidator(s.T(), val.addr, val.pk)
-		validator.Status = val.status
-		validator.Tokens = math.NewInt(1000000)
-		validator.DelegatorShares = math.LegacyNewDecFromInt(validator.Tokens)
+		validator := testutil.NewValidator(s.T(), addr, pk)
+		tokens := s.stakingKeeper.TokensFromConsensusPower(ctx, 1000)
+		validator, _ = validator.AddTokensFromDel(tokens)
+
+		if i < 5 {
+			validator.Status = stakingtypes.Bonded
+		} else {
+			validator.Status = stakingtypes.Unbonded
+		}
+
 		require.NoError(s.stakingKeeper.SetValidator(ctx, validator))
+		require.NoError(s.stakingKeeper.SetValidatorByPowerIndex(ctx, validator))
 
 		valOpAddrs = append(valOpAddrs, validator.OperatorAddress)
 	}
 
 	testCases := []struct {
 		name      string
-		input     *stakingtypes.MsgSetProposers
-		setup     func()
+		msg       *stakingtypes.MsgSetProposers
 		expErr    bool
 		expErrMsg string
-		verify    func()
 	}{
 		{
 			name: "valid - 5 bonded",
-			input: &stakingtypes.MsgSetProposers{
+			msg: &stakingtypes.MsgSetProposers{
 				Authority: s.stakingKeeper.GetAuthority(),
 				Proposers: valOpAddrs[:5],
 			},
 			expErr: false,
-			verify: func() {
-				// Check first 5 validators are proposers
-				proposers, err := s.stakingKeeper.GetProposers(ctx)
-				require.NoError(err)
-				require.ElementsMatch(valOpAddrs[:5], proposers)
-			},
 		},
 		{
 			name: "valid - 5 bonded and 1 unbonded",
-			input: &stakingtypes.MsgSetProposers{
+			msg: &stakingtypes.MsgSetProposers{
 				Authority: s.stakingKeeper.GetAuthority(),
-				Proposers: valOpAddrs, // All 6 validators (5 bonded + 1 unbonded)
+				Proposers: valOpAddrs,
 			},
 			expErr: false,
-			verify: func() {
-				// All validators should be proposers
-				proposers, err := s.stakingKeeper.GetProposers(ctx)
-				require.NoError(err)
-				require.ElementsMatch(valOpAddrs, proposers)
-			},
 		},
 		{
 			name: "valid - empty",
-			input: &stakingtypes.MsgSetProposers{
+			msg: &stakingtypes.MsgSetProposers{
 				Authority: s.stakingKeeper.GetAuthority(),
 				Proposers: []string{},
 			},
 			expErr: false,
-			verify: func() {
-				proposers, err := s.stakingKeeper.GetProposers(ctx)
-				require.NoError(err)
-				require.Empty(proposers)
-			},
 		},
 		{
 			name: "invalid - empty proposer address",
-			input: &stakingtypes.MsgSetProposers{
+			msg: &stakingtypes.MsgSetProposers{
 				Authority: s.stakingKeeper.GetAuthority(),
 				Proposers: []string{valOpAddrs[0], ""},
 			},
@@ -1226,7 +1197,7 @@ func (s *KeeperTestSuite) TestMsgSetProposers() {
 		},
 		{
 			name: "invalid - wrong authority",
-			input: &stakingtypes.MsgSetProposers{
+			msg: &stakingtypes.MsgSetProposers{
 				Authority: "cosmos1invalid",
 				Proposers: []string{valOpAddrs[0]},
 			},
@@ -1235,7 +1206,7 @@ func (s *KeeperTestSuite) TestMsgSetProposers() {
 		},
 		{
 			name: "invalid - non-existent validator",
-			input: &stakingtypes.MsgSetProposers{
+			msg: &stakingtypes.MsgSetProposers{
 				Authority: s.stakingKeeper.GetAuthority(),
 				Proposers: []string{sdk.ValAddress("nonexistent").String()},
 			},
@@ -1244,7 +1215,7 @@ func (s *KeeperTestSuite) TestMsgSetProposers() {
 		},
 		{
 			name: "invalid - malformed proposer address",
-			input: &stakingtypes.MsgSetProposers{
+			msg: &stakingtypes.MsgSetProposers{
 				Authority: s.stakingKeeper.GetAuthority(),
 				Proposers: []string{"invalid-address"},
 			},
@@ -1253,7 +1224,7 @@ func (s *KeeperTestSuite) TestMsgSetProposers() {
 		},
 		{
 			name: "invalid - too few bonded validators",
-			input: &stakingtypes.MsgSetProposers{
+			msg: &stakingtypes.MsgSetProposers{
 				Authority: s.stakingKeeper.GetAuthority(),
 				Proposers: valOpAddrs[1:],
 			},
@@ -1264,12 +1235,10 @@ func (s *KeeperTestSuite) TestMsgSetProposers() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			if tc.setup != nil {
-				tc.setup()
-			}
+			testCtx, _ := ctx.CacheContext()
 
-			// Execute message
-			_, err := msgServer.SetProposers(ctx, tc.input)
+			// Process `SetProposers` msg
+			_, err := msgServer.SetProposers(testCtx, tc.msg)
 
 			if tc.expErr {
 				require.Error(err)
@@ -1277,9 +1246,25 @@ func (s *KeeperTestSuite) TestMsgSetProposers() {
 			} else {
 				require.NoError(err)
 
-				if tc.verify != nil {
-					tc.verify()
-				}
+				// Verify proposers in state
+				proposers, err := s.stakingKeeper.GetProposers(testCtx)
+				require.NoError(err)
+				require.ElementsMatch(tc.msg.Proposers, proposers)
+
+				// SendFullProposerSetAbciUpdate should be true before applying validator updates
+				forceUpdate, err := s.stakingKeeper.GetSendFullProposerSetAbciUpdate(testCtx)
+				require.NoError(err)
+				require.True(forceUpdate)
+
+				// Verify validator updates.
+				updates, err := s.stakingKeeper.ApplyAndReturnValidatorSetUpdates(testCtx)
+				require.NoError(err)
+				require.Len(updates, len(valOpAddrs))
+
+				// SendFullProposerSetAbciUpdate should be false after applying validator updates
+				forceUpdate, err = s.stakingKeeper.GetSendFullProposerSetAbciUpdate(testCtx)
+				require.NoError(err)
+				require.False(forceUpdate)
 			}
 		})
 	}

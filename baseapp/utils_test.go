@@ -65,7 +65,7 @@ func GenesisStateWithSingleValidator(t *testing.T, codec codec.Codec, builder *r
 	require.NoError(t, err)
 
 	// create validator set with single validator
-	validator := cmttypes.NewValidator(pubKey, 1)
+	validator := cmttypes.NewValidator(pubKey, 1, true)
 	valSet := cmttypes.NewValidatorSet([]*cmttypes.Validator{validator})
 
 	// generate genesis account

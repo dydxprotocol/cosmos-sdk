@@ -92,3 +92,37 @@ func (s *KeeperTestSuite) TestSetProposersErrors() {
 	err = keeper.SetProposers(ctx, []string{nonExistentValAddr.String()})
 	require.ErrorContains(err, "validator does not exist")
 }
+
+func (s *KeeperTestSuite) TestGetSetSendFullProposerSetAbciUpdate() {
+	ctx, keeper := s.ctx, s.stakingKeeper
+	require := s.Require()
+
+	// Should be false when not set yet.
+	send, err := keeper.GetSendFullProposerSetAbciUpdate(ctx)
+	require.NoError(err)
+	require.False(send, "default value should be false")
+
+	// Set to true and verify
+	err = keeper.SetSendFullProposerSetAbciUpdate(ctx, true)
+	require.NoError(err)
+
+	send, err = keeper.GetSendFullProposerSetAbciUpdate(ctx)
+	require.NoError(err)
+	require.True(send)
+
+	// Set to false and verify
+	err = keeper.SetSendFullProposerSetAbciUpdate(ctx, false)
+	require.NoError(err)
+
+	send, err = keeper.GetSendFullProposerSetAbciUpdate(ctx)
+	require.NoError(err)
+	require.False(send)
+
+	// Set to true again and verify.
+	err = keeper.SetSendFullProposerSetAbciUpdate(ctx, true)
+	require.NoError(err)
+
+	send, err = keeper.GetSendFullProposerSetAbciUpdate(ctx)
+	require.NoError(err)
+	require.True(send)
+}

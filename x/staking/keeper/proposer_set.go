@@ -85,3 +85,30 @@ func (k Keeper) checkProposerSetInvariants(ctx context.Context, proposers []stri
 
 	return nil
 }
+
+// GetSendFullProposerSetAbciUpdate returns whether a full proposer set ABCI update is needed
+func (k Keeper) GetSendFullProposerSetAbciUpdate(ctx context.Context) (bool, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.SendFullProposerSetAbciUpdateKey)
+	if err != nil {
+		return false, err
+	}
+
+	if bz == nil {
+		return false, nil
+	}
+
+	return bz[0] == 1, nil
+}
+
+// SetSendFullProposerSetAbciUpdate sets whether a full proposer set ABCI update is needed
+func (k Keeper) SetSendFullProposerSetAbciUpdate(ctx context.Context, send bool) error {
+	store := k.storeService.OpenKVStore(ctx)
+
+	val := byte(0)
+	if send {
+		val = byte(1)
+	}
+
+	return store.Set(types.SendFullProposerSetAbciUpdateKey, []byte{val})
+}

@@ -619,6 +619,12 @@ func (k msgServer) SetProposers(ctx context.Context, msg *types.MsgSetProposers)
 		return nil, err
 	}
 
+	// Set SendFullProposerSetAbciUpdate to true to trigger a full proposer set update
+	// in EndBlocker
+	if err := k.Keeper.SetSendFullProposerSetAbciUpdate(ctx, true); err != nil {
+		return nil, err
+	}
+
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
