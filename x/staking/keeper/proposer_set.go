@@ -35,7 +35,9 @@ func (k Keeper) GetProposers(ctx context.Context) ([]string, error) {
 	return proposers, nil
 }
 
-// SetProposers sets proposers in state by storing their operator addresses.
+// SetProposers sets proposers in state by storing their operator addresses and
+// sets `SendFullProposerSetAbciUpdate` flag to true to trigger a full proposer
+// set update in EndBlocker.
 // Returns error if proposer set invariants are violated.
 func (k Keeper) SetProposers(ctx context.Context, proposers []string) error {
 	if err := k.checkProposerSetInvariants(ctx, proposers); err != nil {
@@ -48,7 +50,15 @@ func (k Keeper) SetProposers(ctx context.Context, proposers []string) error {
 	}
 
 	store := k.storeService.OpenKVStore(ctx)
-	return store.Set(types.ProposerSetKey, bz)
+	if err := store.Set(types.ProposerSetKey, bz); err != nil {
+		return err
+	}
+
+	if err := k.SetSendFullProposerSetAbciUpdate(ctx, true); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // checkProposerSetInvariants validates invariants of a proposer set, which are:
@@ -101,7 +111,8 @@ func (k Keeper) GetSendFullProposerSetAbciUpdate(ctx context.Context) (bool, err
 	return bz[0] == 1, nil
 }
 
-// SetSendFullProposerSetAbciUpdate sets whether a full proposer set ABCI update is needed
+// SetSendFullProposerSetAbciUpdate sets whether a full proposer set ABCI update is needed.
+// A full update is ok as proposer set updates are infrequent.
 func (k Keeper) SetSendFullProposerSetAbciUpdate(ctx context.Context, send bool) error {
 	store := k.storeService.OpenKVStore(ctx)
 

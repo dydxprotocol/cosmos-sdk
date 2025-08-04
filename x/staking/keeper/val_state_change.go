@@ -220,8 +220,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 
 		// update the validator set if power has changed or if a full proposer set update is needed
 		if !found || !bytes.Equal(oldPowerBytes, newPowerBytes) || sendFullProposerSetUpdate {
-			update := validator.ABCIValidatorUpdate(powerReduction)
-			update.CanPropose = canPropose(validator.GetOperator())
+			update := validator.ABCIValidatorUpdate(powerReduction, canPropose(validator.GetOperator()))
 			updates = append(updates, update)
 
 			if err = k.SetLastValidatorPower(ctx, valAddr, newPower); err != nil {
@@ -255,8 +254,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 			return nil, err
 		}
 
-		update := validator.ABCIValidatorUpdateZero()
-		update.CanPropose = canPropose(validator.GetOperator())
+		update := validator.ABCIValidatorUpdateZero(canPropose(validator.GetOperator()))
 		updates = append(updates, update)
 	}
 

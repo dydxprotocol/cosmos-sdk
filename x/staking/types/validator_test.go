@@ -61,20 +61,22 @@ func TestUpdateDescription(t *testing.T) {
 
 func TestABCIValidatorUpdate(t *testing.T) {
 	validator := newValidator(t, valAddr1, pk1)
-	abciVal := validator.ABCIValidatorUpdate(sdk.DefaultPowerReduction)
+	abciVal := validator.ABCIValidatorUpdate(sdk.DefaultPowerReduction, true)
 	pk, err := validator.TmConsPublicKey()
 	require.NoError(t, err)
 	require.Equal(t, pk, abciVal.PubKey)
 	require.Equal(t, validator.BondedTokens().Int64(), abciVal.Power)
+	require.True(t, abciVal.CanPropose)
 }
 
 func TestABCIValidatorUpdateZero(t *testing.T) {
 	validator := newValidator(t, valAddr1, pk1)
-	abciVal := validator.ABCIValidatorUpdateZero()
+	abciVal := validator.ABCIValidatorUpdateZero(false)
 	pk, err := validator.TmConsPublicKey()
 	require.NoError(t, err)
 	require.Equal(t, pk, abciVal.PubKey)
 	require.Equal(t, int64(0), abciVal.Power)
+	require.False(t, abciVal.CanPropose)
 }
 
 func TestShareTokens(t *testing.T) {
