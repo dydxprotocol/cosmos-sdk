@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"crypto"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -69,8 +68,6 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 				}
 				powerReduction := keeper.PowerReduction(testCtx)
 				val0, _ = val0.AddTokensFromDel(powerReduction)
-
-				// Use TestingUpdateValidator to update the validator
 				stakingkeeper.TestingUpdateValidator(keeper, testCtx, val0, false)
 
 				return nil
@@ -82,7 +79,7 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 			},
 		},
 		{
-			name: "empty proposers, validator power change, CanPropose should default to true",
+			name: "proposers set to empty, validator power change, CanPropose should default to true",
 			setup: func(testCtx sdk.Context) error {
 				setupValidators(testCtx, 1)
 
@@ -97,8 +94,6 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 				}
 				powerReduction := keeper.PowerReduction(testCtx)
 				val0, _ = val0.AddTokensFromDel(powerReduction)
-
-				// Use TestingUpdateValidator to update the validator
 				stakingkeeper.TestingUpdateValidator(keeper, testCtx, val0, false)
 
 				return nil
@@ -110,61 +105,30 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 			},
 		},
 		{
-			name: "empty proposers, no updates without power changes",
-			setup: func(testCtx sdk.Context) error {
-				setupValidators(testCtx, 1)
-				return keeper.SetProposers(testCtx, []string{})
-			},
-			verify: func(updates []abci.ValidatorUpdate) {
-				require.Empty(updates)
-			},
-		},
-		{
-			name: "proposers not set, all validators should get CanPropose=true updates during a force update",
-			setup: func(testCtx sdk.Context) error {
-				setupValidators(testCtx, 3)
-
-				// Force full proposer set update
-				return keeper.SetSendFullProposerSetAbciUpdate(testCtx, true)
-			},
-			verify: func(updates []abci.ValidatorUpdate) {
-				seen := make(map[crypto.PublicKey]bool)
-				for _, update := range updates {
-					require.True(update.CanPropose)
-					require.Equal(int64(1000), update.Power)
-
-					seen[update.PubKey] = true
-				}
-
-				require.Len(updates, 3)
-				require.Len(seen, 3)
-			},
-		},
-		{
-			name: "proposers set, no updates without power changes",
+			name: "proposers set to all validators, no power change, all validators get updates",
 			setup: func(testCtx sdk.Context) error {
 				// Create 5 validators for this test
 				valOpAddrs := setupValidators(testCtx, 5)
 
-				proposers := make([]string, 5)
-				for i := 0; i < 5; i++ {
-					proposers[i] = valOpAddrs[i]
-				}
-				return keeper.SetProposers(testCtx, proposers)
+				return keeper.SetProposers(testCtx, valOpAddrs)
 			},
 			verify: func(updates []abci.ValidatorUpdate) {
-				require.Empty(updates)
+				require.Len(updates, 5)
+
+				for _, update := range updates {
+					require.True(update.CanPropose)
+					require.Equal(int64(1000), update.Power)
+				}
 			},
 		},
 		{
-			name: "proposers set, updates with appropriate CanPropose when power changes",
+			name: "proposers set to first five, validator power changes, all validators get updates",
 			setup: func(testCtx sdk.Context) error {
-				// Create 7 validators for this test (need more than 5 to have validators outside proposer set)
+				// Create 7 validators
 				valOpAddrs := setupValidators(testCtx, 7)
 
 				// Set first 5 as proposers
-				proposers := valOpAddrs[:5]
-				if err := keeper.SetProposers(testCtx, proposers); err != nil {
+				if err := keeper.SetProposers(testCtx, valOpAddrs[:5]); err != nil {
 					return err
 				}
 
@@ -188,103 +152,28 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 				return nil
 			},
 			verify: func(updates []abci.ValidatorUpdate) {
-				require.Len(updates, 2)
-
-				// Check update for val4 (in proposer set)
-				val4Update, exists := getUpdateByPK(updates, PKs[4])
-				require.True(exists)
-				require.True(val4Update.CanPropose)
-				require.Equal(int64(1007), val4Update.Power)
-
-				// Check update for val5 (not in proposer set)
-				val5Update, exists := getUpdateByPK(updates, PKs[5])
-				require.True(exists)
-				require.False(val5Update.CanPropose)
-				require.Equal(int64(1001), val5Update.Power)
-			},
-		},
-		{
-			name: "proposers set, no power change, force update",
-			setup: func(testCtx sdk.Context) error {
-				valOpAddrs := setupValidators(testCtx, 7)
-
-				// Set first 5 validators as proposers
-				proposers := make([]string, 5)
-				for i := 0; i < 5; i++ {
-					proposers[i] = valOpAddrs[i]
-				}
-				if err := keeper.SetProposers(testCtx, proposers); err != nil {
-					return err
-				}
-				return keeper.SetSendFullProposerSetAbciUpdate(testCtx, true)
-			},
-			verify: func(updates []abci.ValidatorUpdate) {
 				require.Len(updates, 7)
 
-				// Check proposers
-				for i := 0; i < 5; i++ {
-					update, exists := getUpdateByPK(updates, PKs[i])
+				for i := 0; i < 7; i++ {
+					valUpdate, exists := getUpdateByPK(updates, PKs[i])
 					require.True(exists)
-					require.True(update.CanPropose)
-					require.Equal(int64(1000), update.Power)
+
+					// Check `CanPropose`
+					if i < 5 {
+						require.True(valUpdate.CanPropose)
+					} else {
+						require.False(valUpdate.CanPropose)
+					}
+
+					// Check `Power`
+					if i == 4 {
+						require.Equal(int64(1007), valUpdate.Power)
+					} else if i == 5 {
+						require.Equal(int64(1001), valUpdate.Power)
+					} else {
+						require.Equal(int64(1000), valUpdate.Power)
+					}
 				}
-
-				// Check non-proposers
-				for i := 5; i < 7; i++ {
-					update, exists := getUpdateByPK(updates, PKs[i])
-					require.True(exists)
-					require.False(update.CanPropose)
-					require.Equal(int64(1000), update.Power)
-				}
-			},
-		},
-		{
-			name: "proposers set, validator power change, force update",
-			setup: func(testCtx sdk.Context) error {
-				valOpAddrs := setupValidators(testCtx, 7)
-
-				// Set first 5 validators as proposers
-				proposers := make([]string, 5)
-				for i := 0; i < 5; i++ {
-					proposers[i] = valOpAddrs[i]
-				}
-				if err := keeper.SetProposers(testCtx, proposers); err != nil {
-					return err
-				}
-
-				// Add 123 to power of val5 (not in proposer set)
-				val5, err := keeper.GetValidator(testCtx, sdk.ValAddress(PKs[5].Address()))
-				if err != nil {
-					return err
-				}
-				powerReduction := keeper.PowerReduction(testCtx)
-				val5, _ = val5.AddTokensFromDel(powerReduction.Mul(math.NewInt(123)))
-				stakingkeeper.TestingUpdateValidator(keeper, testCtx, val5, false)
-
-				return keeper.SetSendFullProposerSetAbciUpdate(testCtx, true)
-			},
-			verify: func(updates []abci.ValidatorUpdate) {
-				require.Len(updates, 7)
-
-				// Check validators 0-4 (in proposer set)
-				for i := 0; i < 5; i++ {
-					update, exists := getUpdateByPK(updates, PKs[i])
-					require.True(exists)
-					require.True(update.CanPropose)
-					require.Equal(int64(1000), update.Power)
-				}
-
-				// Check val5 (not in proposer set, power change)
-				val5Update, exists := getUpdateByPK(updates, PKs[5])
-				require.True(exists)
-				require.False(val5Update.CanPropose)
-				require.Equal(int64(1123), val5Update.Power)
-
-				// Check val6 (not in proposer set, no power change)
-				val6Update, exists := getUpdateByPK(updates, PKs[6])
-				require.True(exists)
-				require.False(val6Update.CanPropose)
-				require.Equal(int64(1000), val6Update.Power)
 			},
 		},
 	}
