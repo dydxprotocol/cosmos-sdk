@@ -71,7 +71,7 @@ func (suite *SimTestSuite) SetupTest() {
 			return nil, fmt.Errorf("failed to create pubkey: %w", err)
 		}
 
-		validator := cmttypes.NewValidator(cmtPk, 1)
+		validator := cmttypes.NewValidator(cmtPk, 1, true)
 
 		return cmttypes.NewValidatorSet([]*cmttypes.Validator{validator}), nil
 	}

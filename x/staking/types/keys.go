@@ -56,6 +56,12 @@ var (
 	ParamsKey = []byte{0x51} // prefix for parameters for module x/staking
 
 	DelegationByValIndexKey = []byte{0x71} // key for delegations by a validator
+
+	// key for proposer set
+	// Note: all validators default to being proposers if proposer set is empty
+	ProposerSetKey = []byte("PS")
+
+	SendFullProposerSetAbciUpdateKey = []byte("SFPS") // key for whether a full proposer set abci update is needed
 )
 
 // UnbondingType defines the type of unbonding operation

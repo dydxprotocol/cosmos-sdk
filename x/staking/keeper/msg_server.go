@@ -605,3 +605,28 @@ func (k msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 
 	return &types.MsgUpdateParamsResponse{}, nil
 }
+
+// SetProposers defines a method to set which validators can propose blocks
+func (k msgServer) SetProposers(ctx context.Context, msg *types.MsgSetProposers) (*types.MsgSetProposersResponse, error) {
+	// Validate authority
+	if k.authority != msg.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
+	}
+
+	// Set proposers in state
+	// Not that invariant checks of a proposer set are done in keeper method `SetProposers`
+	if err := k.Keeper.SetProposers(ctx, msg.Proposers); err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeSetProposers,
+			sdk.NewAttribute(types.AttributeKeyAuthority, msg.Authority),
+			sdk.NewAttribute(types.AttributeKeyProposerSetSize, strconv.Itoa(len(msg.Proposers))),
+		),
+	)
+
+	return &types.MsgSetProposersResponse{}, nil
+}

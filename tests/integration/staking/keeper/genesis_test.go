@@ -127,10 +127,73 @@ func TestInitGenesis(t *testing.T) {
 	abcivals := make([]abci.ValidatorUpdate, len(vals))
 
 	for i, val := range validators {
-		abcivals[i] = val.ABCIValidatorUpdate((f.stakingKeeper.PowerReduction(f.sdkCtx)))
+		abcivals[i] = val.ABCIValidatorUpdate((f.stakingKeeper.PowerReduction(f.sdkCtx)), true)
 	}
 
 	assert.DeepEqual(t, abcivals, vals)
+
+	// Verify no proposers are set in state.
+	proposers, err := f.stakingKeeper.GetProposers(f.sdkCtx)
+	assert.NilError(t, err)
+	assert.Equal(t, 0, len(proposers))
+
+	// Verify proposers in genesis export is also empty.
+	exportedGenesis := f.stakingKeeper.ExportGenesis(f.sdkCtx)
+	assert.Equal(t, 0, len(exportedGenesis.Proposers))
+}
+
+func TestInitGenesisWithProposerSet(t *testing.T) {
+	f, addrs := bootstrapGenesisTest(t, 6)
+
+	validators := make([]types.Validator, 6)
+	for i := 0; i < 6; i++ {
+		pk, err := codectypes.NewAnyWithValue(PKs[i])
+		assert.NilError(t, err)
+
+		validators[i] = types.Validator{
+			OperatorAddress: sdk.ValAddress(addrs[i]).String(),
+			ConsensusPubkey: pk,
+			Status:          types.Bonded,
+			Tokens:          math.NewInt(100),
+			DelegatorShares: math.LegacyNewDec(100),
+		}
+	}
+
+	params := types.DefaultParams()
+	params.BondDenom = sdk.DefaultBondDenom
+
+	// Set first 5 validators as proposers (meets MIN_BONDED_IN_PROPOSER_SET requirement)
+	proposers := make([]string, 5)
+	for i := 0; i < 5; i++ {
+		proposers[i] = validators[i].OperatorAddress
+	}
+	genesisState := &types.GenesisState{
+		Params:     params,
+		Validators: validators,
+		Proposers:  proposers,
+	}
+
+	// Fund bonded pool
+	assert.NilError(t,
+		banktestutil.FundModuleAccount(
+			f.sdkCtx,
+			f.bankKeeper,
+			types.BondedPoolName,
+			sdk.NewCoins(sdk.NewCoin(params.BondDenom, math.NewInt(600))),
+		),
+	)
+
+	// Init genesis
+	f.stakingKeeper.InitGenesis(f.sdkCtx, genesisState)
+
+	// Verify proposer set in state.
+	actualProposers, err := f.stakingKeeper.GetProposers(f.sdkCtx)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, proposers, actualProposers)
+
+	// Verify proposer set in genesis export
+	exportedGenesis := f.stakingKeeper.ExportGenesis(f.sdkCtx)
+	assert.DeepEqual(t, proposers, exportedGenesis.Proposers)
 }
 
 func TestInitGenesis_PoolsBalanceMismatch(t *testing.T) {
@@ -231,7 +294,7 @@ func TestInitGenesisLargeValidatorSet(t *testing.T) {
 
 	abcivals := make([]abci.ValidatorUpdate, 100)
 	for i, val := range validators[:100] {
-		abcivals[i] = val.ABCIValidatorUpdate(f.stakingKeeper.PowerReduction(f.sdkCtx))
+		abcivals[i] = val.ABCIValidatorUpdate(f.stakingKeeper.PowerReduction(f.sdkCtx), true)
 	}
 
 	// remove genesis validator

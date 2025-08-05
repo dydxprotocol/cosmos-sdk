@@ -1,0 +1,125 @@
+package keeper
+
+import (
+	"context"
+	"encoding/json"
+
+	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/x/staking/types"
+)
+
+const (
+	// MinBondedInProposerSet is the minimum number of bonded validators required in a proposer set
+	MinBondedInProposerSet = 5
+)
+
+// GetProposers returns all proposers by their operator addresses.
+// Note: Returns empty array when no proposers are set
+func (k Keeper) GetProposers(ctx context.Context) ([]string, error) {
+	store := k.storeService.OpenKVStore(ctx)
+
+	bz, err := store.Get(types.ProposerSetKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var proposers []string
+	if bz == nil {
+		return proposers, nil
+	}
+
+	if err := json.Unmarshal(bz, &proposers); err != nil {
+		return nil, err
+	}
+
+	return proposers, nil
+}
+
+// SetProposers sets proposers in state by storing their operator addresses and
+// sets `SendFullProposerSetAbciUpdate` flag to true to trigger a full proposer
+// set update in EndBlocker.
+// Returns error if proposer set invariants are violated.
+func (k Keeper) SetProposers(ctx context.Context, proposers []string) error {
+	if err := k.checkProposerSetInvariants(ctx, proposers); err != nil {
+		return err
+	}
+
+	bz, err := json.Marshal(proposers)
+	if err != nil {
+		return err
+	}
+
+	store := k.storeService.OpenKVStore(ctx)
+	if err := store.Set(types.ProposerSetKey, bz); err != nil {
+		return err
+	}
+
+	if err := k.SetSendFullProposerSetAbciUpdate(ctx, true); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// checkProposerSetInvariants validates invariants of a proposer set, which are:
+// - all proposers are valid operator addresses
+// - all proposers correspond to existing validators
+// - at least MinBondedInProposerSet proposers are bonded
+func (k Keeper) checkProposerSetInvariants(ctx context.Context, proposers []string) error {
+	if len(proposers) == 0 {
+		return nil // Valid as x/staking will default to all validators being proposers.
+	}
+
+	bonded := 0
+	for _, proposerAddr := range proposers {
+		operatorAddr, err := k.validatorAddressCodec.StringToBytes(proposerAddr)
+		if err != nil {
+			return err
+		}
+
+		validator, err := k.GetValidator(ctx, operatorAddr)
+		if err != nil {
+			return err
+		}
+
+		if validator.Status == types.Bonded {
+			bonded++
+		}
+	}
+
+	if bonded < MinBondedInProposerSet {
+		return errorsmod.Wrapf(types.ErrTooFewBondedProposers,
+			"proposer set only has %d bonded validators, less than the required %d",
+			bonded, MinBondedInProposerSet)
+	}
+
+	return nil
+}
+
+// GetSendFullProposerSetAbciUpdate returns whether a full proposer set ABCI update is needed
+func (k Keeper) GetSendFullProposerSetAbciUpdate(ctx context.Context) (bool, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get(types.SendFullProposerSetAbciUpdateKey)
+	if err != nil {
+		return false, err
+	}
+
+	if bz == nil {
+		return false, nil
+	}
+
+	return bz[0] == 1, nil
+}
+
+// SetSendFullProposerSetAbciUpdate sets whether a full proposer set ABCI update is needed.
+// A full update is ok as proposer set updates are infrequent.
+func (k Keeper) SetSendFullProposerSetAbciUpdate(ctx context.Context, send bool) error {
+	store := k.storeService.OpenKVStore(ctx)
+
+	val := byte(0)
+	if send {
+		val = byte(1)
+	}
+
+	return store.Set(types.SendFullProposerSetAbciUpdateKey, []byte{val})
+}

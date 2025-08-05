@@ -33,6 +33,7 @@ const (
 	Query_HistoricalInfo_FullMethodName                = "/cosmos.staking.v1beta1.Query/HistoricalInfo"
 	Query_Pool_FullMethodName                          = "/cosmos.staking.v1beta1.Query/Pool"
 	Query_Params_FullMethodName                        = "/cosmos.staking.v1beta1.Query/Params"
+	Query_Proposers_FullMethodName                     = "/cosmos.staking.v1beta1.Query/Proposers"
 )
 
 // QueryClient is the client API for Query service.
@@ -92,6 +93,8 @@ type QueryClient interface {
 	Pool(ctx context.Context, in *QueryPoolRequest, opts ...grpc.CallOption) (*QueryPoolResponse, error)
 	// Parameters queries the staking parameters.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// Proposers queries the current set of validators eligible to propose blocks.
+	Proposers(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error)
 }
 
 type queryClient struct {
@@ -228,6 +231,15 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 	return out, nil
 }
 
+func (c *queryClient) Proposers(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error) {
+	out := new(QueryProposersResponse)
+	err := c.cc.Invoke(ctx, Query_Proposers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -285,6 +297,8 @@ type QueryServer interface {
 	Pool(context.Context, *QueryPoolRequest) (*QueryPoolResponse, error)
 	// Parameters queries the staking parameters.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// Proposers queries the current set of validators eligible to propose blocks.
+	Proposers(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -333,6 +347,9 @@ func (UnimplementedQueryServer) Pool(context.Context, *QueryPoolRequest) (*Query
 }
 func (UnimplementedQueryServer) Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
+}
+func (UnimplementedQueryServer) Proposers(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Proposers not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -599,6 +616,24 @@ func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_Proposers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProposersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).Proposers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_Proposers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).Proposers(ctx, req.(*QueryProposersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -661,6 +696,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Params",
 			Handler:    _Query_Params_Handler,
+		},
+		{
+			MethodName: "Proposers",
+			Handler:    _Query_Proposers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

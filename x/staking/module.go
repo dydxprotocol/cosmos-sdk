@@ -97,6 +97,21 @@ func (amb AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
 
+// GetQueryCmd returns the root query command for the staking module.
+func (AppModuleBasic) GetQueryCmd() *cobra.Command {
+	queryCmd := &cobra.Command{
+		Use:                        types.ModuleName,
+		Short:                      "Querying commands for the staking module",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+
+	queryCmd.AddCommand(cli.CmdQueryProposers())
+
+	return queryCmd
+}
+
 // AppModule implements an application module for the staking module.
 type AppModule struct {
 	AppModuleBasic
