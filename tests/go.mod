@@ -216,6 +216,6 @@ replace (
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.1
 )
 
-replace github.com/cometbft/cometbft => github.com/dydxprotocol/cometbft v0.38.6-0.20250731170939-ab5587555808
+replace github.com/cometbft/cometbft => github.com/dydxprotocol/cometbft v0.38.6-0.20250805203801-49864fd76ba1
 
 replace cosmossdk.io/store => github.com/dydxprotocol/cosmos-sdk/store v1.0.3-0.20240326190927-d35618165018
