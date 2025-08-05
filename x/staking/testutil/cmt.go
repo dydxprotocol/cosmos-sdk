@@ -27,7 +27,7 @@ func ToCmtValidator(v types.Validator, r math.Int) (*cmttypes.Validator, error) 
 		return nil, err
 	}
 
-	return cmttypes.NewValidator(tmPk, v.ConsensusPower(r)), nil
+	return cmttypes.NewValidator(tmPk, v.ConsensusPower(r), true), nil
 }
 
 // ToCmtValidators casts all validators to the corresponding CometBFT type.

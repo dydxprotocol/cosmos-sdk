@@ -184,6 +184,11 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 
 	// don't need to run CometBFT updates if we exported
 	if data.Exported {
+		proposerMap := make(map[string]bool)
+		for _, proposer := range data.Proposers {
+			proposerMap[proposer] = true
+		}
+
 		for _, lv := range data.LastValidatorPowers {
 			valAddr, err := k.validatorAddressCodec.StringToBytes(lv.Address)
 			if err != nil {
@@ -200,7 +205,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 				panic(fmt.Sprintf("validator %s not found", lv.Address))
 			}
 
-			update := validator.ABCIValidatorUpdate(k.PowerReduction(ctx))
+			canPropose := len(data.Proposers) == 0 || proposerMap[validator.OperatorAddress]
+			update := validator.ABCIValidatorUpdate(k.PowerReduction(ctx), canPropose)
 			update.Power = lv.Power // keep the next-val-set offset, use the last power for the first block
 			res = append(res, update)
 		}
