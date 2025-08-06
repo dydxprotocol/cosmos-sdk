@@ -57,7 +57,7 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 		verify func(updates []abci.ValidatorUpdate)
 	}{
 		{
-			name: "proposers not set, validator power change, CanPropose should default to true",
+			name: "proposers not set, validator power change, ProposeDisabled should default to false",
 			setup: func(testCtx sdk.Context) error {
 				setupValidators(testCtx, 1)
 
@@ -74,12 +74,12 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 			},
 			verify: func(updates []abci.ValidatorUpdate) {
 				require.Len(updates, 1)
-				require.True(updates[0].CanPropose)
+				require.False(updates[0].ProposeDisabled)
 				require.Equal(int64(1001), updates[0].Power) // 1000 + 1
 			},
 		},
 		{
-			name: "proposers set to empty, validator power change, CanPropose should default to true",
+			name: "proposers set to empty, validator power change, ProposeDisabled should default to false",
 			setup: func(testCtx sdk.Context) error {
 				setupValidators(testCtx, 1)
 
@@ -100,7 +100,7 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 			},
 			verify: func(updates []abci.ValidatorUpdate) {
 				require.Len(updates, 1)
-				require.True(updates[0].CanPropose)
+				require.False(updates[0].ProposeDisabled)
 				require.Equal(int64(1001), updates[0].Power) // 1000 + 1
 			},
 		},
@@ -116,7 +116,7 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 				require.Len(updates, 5)
 
 				for _, update := range updates {
-					require.True(update.CanPropose)
+					require.False(update.ProposeDisabled)
 					require.Equal(int64(1000), update.Power)
 				}
 			},
@@ -158,11 +158,11 @@ func (s *KeeperTestSuite) TestApplyAndReturnValidatorSetUpdates_ProposerSet() {
 					valUpdate, exists := getUpdateByPK(updates, PKs[i])
 					require.True(exists)
 
-					// Check `CanPropose`
+					// Check `ProposeDisabled`
 					if i < 5 {
-						require.True(valUpdate.CanPropose)
+						require.False(valUpdate.ProposeDisabled)
 					} else {
-						require.False(valUpdate.CanPropose)
+						require.True(valUpdate.ProposeDisabled)
 					}
 
 					// Check `Power`

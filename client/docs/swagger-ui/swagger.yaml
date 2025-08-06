@@ -21245,9 +21245,7 @@ paths:
         - Query
   /cosmos/staking/v1beta1/proposers:
     get:
-      summary: >-
-        Proposers queries the current set of validators eligible to propose
-        blocks.
+      summary: Proposers queries the set of validators eligible to propose blocks.
       operationId: Proposers
       responses:
         '200':
@@ -21260,7 +21258,7 @@ paths:
                 items:
                   type: string
                 description: >-
-                  proposers contains the list of validator operator addresses
+                  proposers is the list of operator addresses of validators
                   eligible to propose blocks.
             description: >-
               QueryProposersResponse is response type for the Query/Proposers
@@ -53814,8 +53812,8 @@ definitions:
         items:
           type: string
         description: >-
-          proposers contains the list of validator operator addresses eligible
-          to propose blocks.
+          proposers is the list of operator addresses of validators eligible to
+          propose blocks.
     description: >-
       QueryProposersResponse is response type for the Query/Proposers RPC
       method.

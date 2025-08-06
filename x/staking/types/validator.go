@@ -258,31 +258,31 @@ func (d Description) EnsureLength() (Description, error) {
 
 // ABCIValidatorUpdate returns an abci.ValidatorUpdate from a staking validator type
 // with the full validator power
-func (v Validator) ABCIValidatorUpdate(r math.Int, canPropose bool) abci.ValidatorUpdate {
+func (v Validator) ABCIValidatorUpdate(r math.Int, proposeDisabled bool) abci.ValidatorUpdate {
 	tmProtoPk, err := v.TmConsPublicKey()
 	if err != nil {
 		panic(err)
 	}
 
 	return abci.ValidatorUpdate{
-		PubKey:     tmProtoPk,
-		Power:      v.ConsensusPower(r),
-		CanPropose: canPropose,
+		PubKey:          tmProtoPk,
+		Power:           v.ConsensusPower(r),
+		ProposeDisabled: proposeDisabled,
 	}
 }
 
 // ABCIValidatorUpdateZero returns an abci.ValidatorUpdate from a staking validator type
 // with zero power used for validator updates.
-func (v Validator) ABCIValidatorUpdateZero(canPropose bool) abci.ValidatorUpdate {
+func (v Validator) ABCIValidatorUpdateZero(proposeDisabled bool) abci.ValidatorUpdate {
 	tmProtoPk, err := v.TmConsPublicKey()
 	if err != nil {
 		panic(err)
 	}
 
 	return abci.ValidatorUpdate{
-		PubKey:     tmProtoPk,
-		Power:      0,
-		CanPropose: canPropose,
+		PubKey:          tmProtoPk,
+		Power:           0,
+		ProposeDisabled: proposeDisabled,
 	}
 }
 

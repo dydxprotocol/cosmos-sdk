@@ -151,7 +151,9 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		return nil, err
 	}
 
-	// Get proposers to properly set `CanPropose` of validator updates
+	// Get proposers to properly set `ProposeDisabled` of validator updates
+	// Propose is disabled for a validator `v` if proposer set isn't empty
+	// and `v` doesn't exist in proposer set
 	proposers, err := k.GetProposers(ctx)
 	if err != nil {
 		return nil, err
@@ -162,8 +164,8 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		proposerMap[proposer] = true
 	}
 
-	canPropose := func(validatorOpAddr string) bool {
-		return len(proposers) == 0 || proposerMap[validatorOpAddr]
+	proposeDisabled := func(validatorOpAddr string) bool {
+		return len(proposers) > 0 && !proposerMap[validatorOpAddr]
 	}
 
 	var updatedProposers []string // for sanity check later
@@ -222,11 +224,11 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 
 		// update the validator set if power has changed or if a full proposer set update is needed
 		if !found || !bytes.Equal(oldPowerBytes, newPowerBytes) || sendFullProposerSetUpdate {
-			cp := canPropose(validator.GetOperator())
-			update := validator.ABCIValidatorUpdate(powerReduction, cp)
+			pd := proposeDisabled(validator.GetOperator())
+			update := validator.ABCIValidatorUpdate(powerReduction, pd)
 			updates = append(updates, update)
 
-			if cp {
+			if !pd {
 				updatedProposers = append(updatedProposers, validator.GetOperator())
 			}
 
@@ -261,11 +263,11 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 			return nil, err
 		}
 
-		cp := canPropose(validator.GetOperator())
-		update := validator.ABCIValidatorUpdateZero(cp)
+		pd := proposeDisabled(validator.GetOperator())
+		update := validator.ABCIValidatorUpdateZero(pd)
 		updates = append(updates, update)
 
-		if cp {
+		if !pd {
 			updatedProposers = append(updatedProposers, validator.GetOperator())
 		}
 	}
@@ -275,13 +277,13 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		if err := k.checkProposerSetInvariants(ctx, updatedProposers); err != nil {
 			// Log error and default to every validator can propose
 			sdk.UnwrapSDKContext(ctx).Logger().Error(
-				"Proposer set sanity check failed, defaulting all validators to CanPropose=true",
+				"Proposer set sanity check failed, defaulting all validators to ProposeDisabled=false",
 				"error",
 				err,
 			)
 
 			for i := range updates {
-				updates[i].CanPropose = true
+				updates[i].ProposeDisabled = false
 			}
 		}
 

@@ -93,7 +93,7 @@ type QueryClient interface {
 	Pool(ctx context.Context, in *QueryPoolRequest, opts ...grpc.CallOption) (*QueryPoolResponse, error)
 	// Parameters queries the staking parameters.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// Proposers queries the current set of validators eligible to propose blocks.
+	// Proposers queries the set of validators eligible to propose blocks.
 	Proposers(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error)
 }
 
@@ -297,7 +297,7 @@ type QueryServer interface {
 	Pool(context.Context, *QueryPoolRequest) (*QueryPoolResponse, error)
 	// Parameters queries the staking parameters.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// Proposers queries the current set of validators eligible to propose blocks.
+	// Proposers queries the set of validators eligible to propose blocks.
 	Proposers(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

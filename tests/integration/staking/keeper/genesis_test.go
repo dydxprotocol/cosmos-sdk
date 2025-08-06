@@ -127,7 +127,7 @@ func TestInitGenesis(t *testing.T) {
 	abcivals := make([]abci.ValidatorUpdate, len(vals))
 
 	for i, val := range validators {
-		abcivals[i] = val.ABCIValidatorUpdate((f.stakingKeeper.PowerReduction(f.sdkCtx)), true)
+		abcivals[i] = val.ABCIValidatorUpdate((f.stakingKeeper.PowerReduction(f.sdkCtx)), false)
 	}
 
 	assert.DeepEqual(t, abcivals, vals)
@@ -294,7 +294,7 @@ func TestInitGenesisLargeValidatorSet(t *testing.T) {
 
 	abcivals := make([]abci.ValidatorUpdate, 100)
 	for i, val := range validators[:100] {
-		abcivals[i] = val.ABCIValidatorUpdate(f.stakingKeeper.PowerReduction(f.sdkCtx), true)
+		abcivals[i] = val.ABCIValidatorUpdate(f.stakingKeeper.PowerReduction(f.sdkCtx), false)
 	}
 
 	// remove genesis validator

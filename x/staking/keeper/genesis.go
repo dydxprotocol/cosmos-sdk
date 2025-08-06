@@ -205,8 +205,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 				panic(fmt.Sprintf("validator %s not found", lv.Address))
 			}
 
-			canPropose := len(data.Proposers) == 0 || proposerMap[validator.OperatorAddress]
-			update := validator.ABCIValidatorUpdate(k.PowerReduction(ctx), canPropose)
+			proposeDisabled := len(data.Proposers) > 0 && !proposerMap[validator.OperatorAddress]
+			update := validator.ABCIValidatorUpdate(k.PowerReduction(ctx), proposeDisabled)
 			update.Power = lv.Power // keep the next-val-set offset, use the last power for the first block
 			res = append(res, update)
 		}

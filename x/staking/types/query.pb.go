@@ -1430,7 +1430,7 @@ var xxx_messageInfo_QueryProposersRequest proto.InternalMessageInfo
 
 // QueryProposersResponse is response type for the Query/Proposers RPC method.
 type QueryProposersResponse struct {
-	// proposers contains the list of validator operator addresses eligible to propose blocks.
+	// proposers is the list of operator addresses of validators eligible to propose blocks.
 	Proposers []string `protobuf:"bytes,1,rep,name=proposers,proto3" json:"proposers,omitempty"`
 }
 
@@ -1671,7 +1671,7 @@ type QueryClient interface {
 	Pool(ctx context.Context, in *QueryPoolRequest, opts ...grpc.CallOption) (*QueryPoolResponse, error)
 	// Parameters queries the staking parameters.
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// Proposers queries the current set of validators eligible to propose blocks.
+	// Proposers queries the set of validators eligible to propose blocks.
 	Proposers(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error)
 }
 
@@ -1873,7 +1873,7 @@ type QueryServer interface {
 	Pool(context.Context, *QueryPoolRequest) (*QueryPoolResponse, error)
 	// Parameters queries the staking parameters.
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// Proposers queries the current set of validators eligible to propose blocks.
+	// Proposers queries the set of validators eligible to propose blocks.
 	Proposers(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error)
 }
 

@@ -72,7 +72,7 @@ func (s *SimTestSuite) SetupTest() {
 	account := accounts[0]
 	cmtPk, err := cryptocodec.ToCmtPubKeyInterface(account.PubKey)
 	require.NoError(s.T(), err)
-	validator := cmttypes.NewValidator(cmtPk, 1, true)
+	validator := cmttypes.NewValidator(cmtPk, 1, false)
 
 	startupCfg := simtestutil.DefaultStartUpConfig()
 	startupCfg.GenesisAccounts = accs
