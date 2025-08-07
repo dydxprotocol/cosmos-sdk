@@ -66,7 +66,7 @@ func TestABCIValidatorUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, pk, abciVal.PubKey)
 	require.Equal(t, validator.BondedTokens().Int64(), abciVal.Power)
-	require.True(t, abciVal.CanPropose)
+	require.True(t, abciVal.ProposeDisabled)
 }
 
 func TestABCIValidatorUpdateZero(t *testing.T) {
@@ -76,7 +76,7 @@ func TestABCIValidatorUpdateZero(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, pk, abciVal.PubKey)
 	require.Equal(t, int64(0), abciVal.Power)
-	require.False(t, abciVal.CanPropose)
+	require.False(t, abciVal.ProposeDisabled)
 }
 
 func TestShareTokens(t *testing.T) {
@@ -318,7 +318,7 @@ func TestValidatorToCmt(t *testing.T) {
 		vals.Validators = append(vals.Validators, val)
 		cmtPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
 		require.NoError(t, err)
-		expected[i] = cmttypes.NewValidator(cmtPk, val.ConsensusPower(sdk.DefaultPowerReduction), true)
+		expected[i] = cmttypes.NewValidator(cmtPk, val.ConsensusPower(sdk.DefaultPowerReduction), false)
 	}
 	vs, err := testutil.ToCmtValidators(vals, sdk.DefaultPowerReduction)
 	require.NoError(t, err)

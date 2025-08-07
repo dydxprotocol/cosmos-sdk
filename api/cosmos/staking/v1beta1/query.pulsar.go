@@ -15766,7 +15766,7 @@ type QueryProposersResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// proposers contains the list of validator operator addresses eligible to propose blocks.
+	// proposers is the list of operator addresses of validators eligible to propose blocks.
 	Proposers []string `protobuf:"bytes,1,rep,name=proposers,proto3" json:"proposers,omitempty"`
 }
 
