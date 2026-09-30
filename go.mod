@@ -198,6 +198,6 @@ retract (
 	v0.43.0
 )
 
-replace github.com/cometbft/cometbft => github.com/dydxprotocol/cometbft v0.38.6-0.20260428184537-904204b11c9e
+replace github.com/cometbft/cometbft => github.com/dydxprotocol/cometbft v0.38.6-0.20260930164446-0cbd83dfd37f
 
 replace cosmossdk.io/store => github.com/dydxprotocol/cosmos-sdk/store v1.0.3-0.20240326190927-d35618165018
