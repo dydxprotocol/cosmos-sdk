@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	// The approximate number of items and children per B-tree node. Tuned with benchmarks.
-	// copied from memdb.
+	// bTreeDegree is the degree of the B-tree.
 	bTreeDegree = 32
 )
 
@@ -22,25 +21,37 @@ var errKeyEmpty = errors.New("key cannot be empty")
 // we need it to be as fast as possible, while `MemDB` is mainly used as a mocking db in unit tests.
 //
 // We choose tidwall/btree over google/btree here because it provides API to implement step iterator directly.
+//
+// The zero value is an empty tree whose backing tree is allocated on first
+// write or iteration. Most cachekv stores branched for a CheckTx are never
+// written to, so this keeps their construction allocation-free.
 type BTree struct {
 	tree *btree.BTreeG[item]
 }
 
 // NewBTree creates a wrapper around `btree.BTreeG`.
 func NewBTree() BTree {
-	return BTree{
-		tree: btree.NewBTreeGOptions(byKeys, btree.Options{
+	return BTree{}
+}
+
+func (bt *BTree) ensure() {
+	if bt.tree == nil {
+		bt.tree = btree.NewBTreeGOptions(byKeys, btree.Options{
 			Degree:  bTreeDegree,
 			NoLocks: false,
-		}),
+		})
 	}
 }
 
-func (bt BTree) Set(key, value []byte) {
+func (bt *BTree) Set(key, value []byte) {
+	bt.ensure()
 	bt.tree.Set(newItem(key, value))
 }
 
-func (bt BTree) Get(key []byte) []byte {
+func (bt *BTree) Get(key []byte) []byte {
+	if bt.tree == nil {
+		return nil
+	}
 	i, found := bt.tree.Get(newItem(key, nil))
 	if !found {
 		return nil
@@ -48,27 +59,35 @@ func (bt BTree) Get(key []byte) []byte {
 	return i.value
 }
 
-func (bt BTree) Delete(key []byte) {
+func (bt *BTree) Delete(key []byte) {
+	if bt.tree == nil {
+		return
+	}
 	bt.tree.Delete(newItem(key, nil))
 }
 
-func (bt BTree) Iterator(start, end []byte) (types.Iterator, error) {
+func (bt *BTree) Iterator(start, end []byte) (types.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
-	return newMemIterator(start, end, bt, true), nil
+	bt.ensure()
+	return newMemIterator(start, end, *bt, true), nil
 }
 
-func (bt BTree) ReverseIterator(start, end []byte) (types.Iterator, error) {
+func (bt *BTree) ReverseIterator(start, end []byte) (types.Iterator, error) {
 	if (start != nil && len(start) == 0) || (end != nil && len(end) == 0) {
 		return nil, errKeyEmpty
 	}
-	return newMemIterator(start, end, bt, false), nil
+	bt.ensure()
+	return newMemIterator(start, end, *bt, false), nil
 }
 
 // Copy the tree. This is a copy-on-write operation and is very fast because
 // it only performs a shadowed copy.
-func (bt BTree) Copy() BTree {
+func (bt *BTree) Copy() BTree {
+	if bt.tree == nil {
+		return BTree{}
+	}
 	return BTree{
 		tree: bt.tree.Copy(),
 	}
