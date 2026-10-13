@@ -34,14 +34,10 @@ type Store struct {
 
 var _ types.CacheKVStore = (*Store)(nil)
 
-// NewStore creates a new Store object
+// NewStore creates a new Store object. The caches are allocated on first
+// write, since most stores branched for a CheckTx are never written to.
 func NewStore(parent types.KVStore) *Store {
-	return &Store{
-		cache:         make(map[string]*cValue),
-		unsortedCache: make(map[string]struct{}),
-		sortedCache:   internal.NewBTree(),
-		parent:        parent,
-	}
+	return &Store{parent: parent}
 }
 
 // GetStoreType implements Store.
@@ -99,8 +95,8 @@ func (store *Store) resetCaches() {
 		// (e.g. Epoch block, Genesis block, etc). Free the old caches from memory, and let them get re-allocated.
 		// TODO: In a future CacheKV redesign, such linear workloads should get into a different cache instantiation.
 		// 100_000 is arbitrarily chosen as it solved Osmosis' InitGenesis RAM problem.
-		store.cache = make(map[string]*cValue)
-		store.unsortedCache = make(map[string]struct{})
+		store.cache = nil
+		store.unsortedCache = nil
 	} else {
 		// Clear the cache using the map clearing idiom
 		// and not allocating fresh objects.
@@ -112,7 +108,7 @@ func (store *Store) resetCaches() {
 			delete(store.unsortedCache, key)
 		}
 	}
-	store.sortedCache = internal.NewBTree()
+	store.sortedCache = internal.BTree{}
 }
 
 // Implements Cachetypes.KVStore.
@@ -121,7 +117,7 @@ func (store *Store) Write() {
 	defer store.mtx.Unlock()
 
 	if len(store.cache) == 0 && len(store.unsortedCache) == 0 {
-		store.sortedCache = internal.NewBTree()
+		store.sortedCache = internal.BTree{}
 		return
 	}
 
@@ -398,6 +394,10 @@ func (store *Store) clearUnsortedCacheSubset(unsorted []*kv.Pair, sortState sort
 // A `nil` value means a deletion.
 func (store *Store) setCacheValue(key, value []byte, dirty bool) {
 	keyStr := conv.UnsafeBytesToStr(key)
+	if store.cache == nil {
+		store.cache = make(map[string]*cValue)
+		store.unsortedCache = make(map[string]struct{})
+	}
 	store.cache[keyStr] = &cValue{
 		value: value,
 		dirty: dirty,

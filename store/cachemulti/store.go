@@ -118,13 +118,30 @@ func NewLockingStore(
 	return NewLockingFromKVStore(dbadapter.Store{DB: db}, stores, keys, traceWriter, traceContext)
 }
 
+// newCacheMultiStoreFromCMS branches every store of cms, as NewFromKVStore
+// would, without first copying them into a CacheWrapper map: this runs once
+// per transaction.
 func newCacheMultiStoreFromCMS(cms Store) Store {
-	stores := make(map[types.StoreKey]types.CacheWrapper)
-	for k, v := range cms.stores {
-		stores[k] = v
+	cms2 := Store{
+		db:           cachekv.NewStore(cms.db),
+		stores:       make(map[types.StoreKey]types.CacheWrap, len(cms.stores)),
+		traceWriter:  cms.traceWriter,
+		traceContext: cms.traceContext,
 	}
 
-	return NewFromKVStore(cms.db, stores, nil, cms.traceWriter, cms.traceContext)
+	for key, store := range cms.stores {
+		kv := store.(types.KVStore)
+		if cms.TracingEnabled() {
+			tctx := cms.traceContext.Clone().Merge(types.TraceContext{
+				storeNameCtxKey: key.Name(),
+			})
+
+			kv = tracekv.NewStore(kv, cms.traceWriter, tctx)
+		}
+		cms2.stores[key] = cachekv.NewStore(kv)
+	}
+
+	return cms2
 }
 
 // SetTracer sets the tracer for the MultiStore that the underlying
@@ -200,32 +217,28 @@ func (cms Store) CacheMultiStore() types.CacheMultiStore {
 // CacheMultiStoreWithLocking branches each store wrapping each store with a cachekv store if not locked or
 // delegating to CacheWrapWithLocks if it is a LockingCacheWrapper.
 func (cms Store) CacheMultiStoreWithLocking(storeLocks map[types.StoreKey][][]byte) types.CacheMultiStore {
-	stores := make(map[types.StoreKey]types.CacheWrapper)
-	for k, v := range cms.stores {
-		stores[k] = v
-	}
-
 	cms2 := Store{
 		db:           cachekv.NewStore(cms.db),
-		stores:       make(map[types.StoreKey]types.CacheWrap, len(stores)),
+		stores:       make(map[types.StoreKey]types.CacheWrap, len(cms.stores)),
 		keys:         cms.keys,
 		traceWriter:  cms.traceWriter,
 		traceContext: cms.traceContext,
 	}
 
-	for key, store := range stores {
+	for key, store := range cms.stores {
 		if lockKeys, ok := storeLocks[key]; ok {
 			cms2.stores[key] = store.(types.LockingCacheWrapper).CacheWrapWithLocks(lockKeys)
-		} else {
-			if cms.TracingEnabled() {
-				tctx := cms.traceContext.Clone().Merge(types.TraceContext{
-					storeNameCtxKey: key.Name(),
-				})
-
-				store = tracekv.NewStore(store.(types.KVStore), cms.traceWriter, tctx)
-			}
-			cms2.stores[key] = cachekv.NewStore(store.(types.KVStore))
+			continue
 		}
+		kv := store.(types.KVStore)
+		if cms.TracingEnabled() {
+			tctx := cms.traceContext.Clone().Merge(types.TraceContext{
+				storeNameCtxKey: key.Name(),
+			})
+
+			kv = tracekv.NewStore(kv, cms.traceWriter, tctx)
+		}
+		cms2.stores[key] = cachekv.NewStore(kv)
 	}
 
 	return cms2
